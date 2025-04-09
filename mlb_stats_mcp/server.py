@@ -364,6 +364,38 @@ async def get_game_pace(
         return {"error": str(e), "params_sent": kwargs}
 
 
+@mcp.tool()
+async def get_meta(type_name: str, fields: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Get available values from StatsAPI for use in other queries, or look up descriptions.
+
+    Args:
+        type_name: Type of metadata to retrieve (e.g., 'leagueLeaderTypes', 'positions', 'statGroups')
+        fields: Optional comma-separated list of fields to return (limits response fields)
+
+    Returns:
+        Metadata information from the MLB Stats API
+
+    Example types:
+        awards, baseballStats, eventTypes, gameStatus, gameTypes, hitTrajectories,
+        leagueLeaderTypes, metrics, pitchTypes, positions, statGroups, statTypes
+    """
+    try:
+        logger.debug(f"Retrieving metadata for type: {type_name}")
+        if fields:
+            logger.debug(f"With field filtering: {fields}")
+            result = statsapi.meta(type_name, fields=fields)
+        else:
+            result = statsapi.meta(type_name)
+
+        logger.debug(f"Retrieved metadata for type: {type_name}")
+        return result
+    except Exception as e:
+        error_msg = f"Error retrieving metadata for type {type_name}: {e!s}"
+        logger.error(error_msg)
+        return {"error": str(e), "type": type_name, "fields": fields}
+
+
 def main():
     """Initialize and run the MCP baseball server."""
     # Log startup information

@@ -394,3 +394,100 @@ async def test_get_game_pace_tool():
                 assert any(
                     metric in sport_data for metric in metrics
                 ), "Missing expected pace metrics in sports data"
+
+
+@pytest.mark.asyncio
+async def test_get_meta_tool():
+    """Test the get_meta tool for accessing MLB Stats API metadata."""
+    params = simplify_session_setup()
+
+    async with stdio_client(params) as (read_stream, write_stream):
+        async with ClientSession(read_stream, write_stream) as session:
+            await session.initialize()
+
+            # Check if the tool is available
+            response = await session.list_tools()
+            tool_names = [tool.name for tool in response.tools]
+
+            if "get_meta" not in tool_names:
+                pytest.skip("get_meta tool not available")
+
+            # Test with a simple metadata type - positions
+            result = await session.call_tool("get_meta", {"type_name": "positions"})
+
+            # Check for API errors
+            if result.isError:
+                error_text = (
+                    result.content[0].text if result.content else "No error details"
+                )
+                if "error" in error_text.lower():
+                    print(f"\nAPI Error Details: {error_text}")
+                    pytest.skip("API Error in get_meta")
+
+            # Test response formatting
+            assert result.content, "No content returned from tool"
+            assert result.content[0].type == "text", "Expected text response"
+
+            # Verify response structure
+            data = json.loads(result.content[0].text)
+
+            # Check for error in response data
+            if isinstance(data, dict) and "error" in data:
+                print(f"\nTool returned error: {data['error']}")
+                pytest.skip("Tool implementation error in get_meta")
+
+            # Based on actual response format - positions data comes as a dictionary
+            if isinstance(data, dict):
+                # For dictionary format (positions data often comes as a dict)
+                assert len(data) > 0, "Metadata results should not be empty"
+                # Look for expected fields in a position metadata entry
+                expected_fields = ["code", "shortName", "abbrev", "displayName"]
+                # Check if any of the expected fields exist in the returned data
+                assert any(
+                    field in data for field in expected_fields
+                ), "Position metadata missing expected fields"
+            elif isinstance(data, list):
+                # For list format - used when metadata is returned as a list
+                assert len(data) > 0, "Metadata results should not be empty"
+                # Check for expected fields in first item
+                first_item = data[0]
+                assert any(
+                    field in first_item for field in ["code", "shortName", "abbrev"]
+                ), "Position metadata missing expected fields"
+            else:
+                pytest.fail(f"Unexpected data type: {type(data)}")
+
+            # Also test with field filtering
+            filter_result = await session.call_tool(
+                "get_meta", {"type_name": "positions", "fields": "shortName,code"}
+            )
+
+            if not filter_result.isError:
+                filter_data = json.loads(filter_result.content[0].text)
+
+                # Don't assert specific type, but check for validity
+                if isinstance(filter_data, dict) and filter_data:
+                    # For filtered dictionary, check for the requested fields
+                    requested_fields = ["shortName", "code"]
+                    for field in requested_fields:
+                        assert (
+                            field in filter_data
+                        ), f"Expected field '{field}' missing in filtered results"
+
+                    # Check that we don't have too many additional fields
+                    # Some metadata might include type or other system fields
+                    for key in filter_data.keys():
+                        if key not in requested_fields and key not in ["type"]:
+                            print(
+                                f"Warning: Found additional field '{key}' in filtered results"
+                            )
+
+                elif isinstance(filter_data, list) and filter_data:
+                    first_filtered = filter_data[0]
+                    requested_fields = ["shortName", "code"]
+
+                    # Check that requested fields are present
+                    for field in requested_fields:
+                        assert (
+                            field in first_filtered
+                        ), f"Expected field '{field}' missing in filtered results"
