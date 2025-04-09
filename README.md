@@ -54,6 +54,8 @@ Tests verify all MLB StatsAPI tools work correctly with the MCP protocol, establ
 
 The project uses environment variables stored in `.env` to configure settings.
 
+Use `ANTHROPIC_API_KEY` to enable MCP Server.
+
 ### Logging Configuration
 
 The MLB Stats MCP Server supports configurable logging via environment variables:
