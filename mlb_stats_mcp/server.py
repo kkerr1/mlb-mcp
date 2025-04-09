@@ -398,6 +398,364 @@ async def get_meta(type_name: str, fields: Optional[str] = None) -> Dict[str, An
         return {"error": str(e), "type": type_name, "fields": fields}
 
 
+@mcp.tool()
+async def get_available_endpoints() -> Dict[str, Any]:
+    """
+    Get information about all available MLB Stats API endpoints that can be used with
+    the get_stats tool.
+
+    Returns:
+        A dictionary containing details about all MLB Stats API endpoints, including:
+        - endpoint name
+        - URL pattern
+        - required parameters
+        - all available parameters
+        - additional notes (if available)
+    """
+    try:
+        logger.debug("Retrieving available MLB Stats API endpoints information")
+
+        # Define all available endpoints with their details
+        endpoints = {
+            "attendance": {
+                "url": "https://statsapi.mlb.com/api/{ver}/attendance",
+                "required_params": ["teamId", "leagueId", "leagueListId"],
+                "all_params": [
+                    "ver",
+                    "teamId",
+                    "leagueId",
+                    "season",
+                    "date",
+                    "leagueListId",
+                    "gameType",
+                    "fields",
+                ],
+                "notes": None,
+            },
+            "awards": {
+                "url": "https://statsapi.mlb.com/api/{ver}/awards{awardId}{recipients}",
+                "required_params": [],
+                "all_params": [
+                    "ver",
+                    "awardId",
+                    "recipients",
+                    "sportId",
+                    "leagueId",
+                    "season",
+                    "hydrate",
+                    "fields",
+                ],
+                "notes": (
+                    "Call awards endpoint with no parameters to return a list of "
+                    "awardIds."
+                ),
+            },
+            "conferences": {
+                "url": "https://statsapi.mlb.com/api/{ver}/conferences",
+                "required_params": [],
+                "all_params": ["ver", "conferenceId", "season", "fields"],
+                "notes": None,
+            },
+            "divisions": {
+                "url": "https://statsapi.mlb.com/api/{ver}/divisions",
+                "required_params": [],
+                "all_params": ["ver", "divisionId", "leagueId", "sportId", "season"],
+                "notes": (
+                    "Call divisions endpoint with no parameters to return a list of "
+                    "divisions."
+                ),
+            },
+            "draft": {
+                "url": "https://statsapi.mlb.com/api/{ver}/draft{prospects}{year}{latest}",
+                "required_params": [],
+                "all_params": [
+                    "ver",
+                    "prospects",
+                    "year",
+                    "latest",
+                    "limit",
+                    "fields",
+                    "round",
+                    "name",
+                    "school",
+                    "state",
+                    "country",
+                    "position",
+                    "teamId",
+                    "playerId",
+                    "bisPlayerId",
+                ],
+                "notes": (
+                    "No query parameters are honored when 'latest' endpoint is queried "
+                    "(year is still required). Prospects and Latest cannot be used "
+                    "together."
+                ),
+            },
+            "game": {
+                "url": "https://statsapi.mlb.com/api/{ver}/game/{gamePk}/feed/live",
+                "required_params": ["gamePk"],
+                "all_params": ["ver", "gamePk", "timecode", "hydrate", "fields"],
+                "notes": None,
+            },
+            "game_diff": {
+                "url": "https://statsapi.mlb.com/api/{ver}/game/{gamePk}/feed/live/diffPatch",
+                "required_params": ["gamePk", "startTimecode", "endTimecode"],
+                "all_params": ["ver", "gamePk", "startTimecode", "endTimecode"],
+                "notes": None,
+            },
+            "game_timestamps": {
+                "url": "https://statsapi.mlb.com/api/{ver}/game/{gamePk}/feed/live/timestamps",
+                "required_params": ["gamePk"],
+                "all_params": ["ver", "gamePk"],
+                "notes": None,
+            },
+            "game_changes": {
+                "url": "https://statsapi.mlb.com/api/{ver}/game/changes",
+                "required_params": ["updatedSince"],
+                "all_params": [
+                    "ver",
+                    "updatedSince",
+                    "sportId",
+                    "gameType",
+                    "season",
+                    "fields",
+                ],
+                "notes": None,
+            },
+            "game_contextMetrics": {
+                "url": "https://statsapi.mlb.com/api/{ver}/game/{gamePk}/contextMetrics",
+                "required_params": ["gamePk"],
+                "all_params": ["ver", "gamePk", "timecode", "fields"],
+                "notes": None,
+            },
+            "game_winProbability": {
+                "url": "https://statsapi.mlb.com/api/{ver}/game/{gamePk}/winProbability",
+                "required_params": ["gamePk"],
+                "all_params": ["ver", "gamePk", "timecode", "fields"],
+                "notes": (
+                    "If you only want the current win probability for each team, try "
+                    "the game_contextMetrics endpoint instead."
+                ),
+            },
+            "game_boxscore": {
+                "url": "https://statsapi.mlb.com/api/{ver}/game/{gamePk}/boxscore",
+                "required_params": ["gamePk"],
+                "all_params": ["ver", "gamePk", "timecode", "fields"],
+                "notes": None,
+            },
+            "game_content": {
+                "url": "https://statsapi.mlb.com/api/{ver}/game/{gamePk}/content",
+                "required_params": ["gamePk"],
+                "all_params": ["ver", "gamePk", "highlightLimit"],
+                "notes": None,
+            },
+            "game_linescore": {
+                "url": "https://statsapi.mlb.com/api/{ver}/game/{gamePk}/linescore",
+                "required_params": ["gamePk"],
+                "all_params": ["ver", "gamePk", "timecode", "fields"],
+                "notes": None,
+            },
+            "game_playByPlay": {
+                "url": "https://statsapi.mlb.com/api/{ver}/game/{gamePk}/playByPlay",
+                "required_params": ["gamePk"],
+                "all_params": ["ver", "gamePk", "timecode", "fields"],
+                "notes": None,
+            },
+            "people": {
+                "url": "https://statsapi.mlb.com/api/{ver}/people",
+                "required_params": ["personIds"],
+                "all_params": ["ver", "personIds", "hydrate", "fields"],
+                "notes": None,
+            },
+            "person": {
+                "url": "https://statsapi.mlb.com/api/{ver}/people/{personId}",
+                "required_params": ["personId"],
+                "all_params": ["ver", "personId", "hydrate", "fields"],
+                "notes": None,
+            },
+            "person_stats": {
+                "url": "https://statsapi.mlb.com/api/{ver}/people/{personId}/stats/game/{gamePk}",
+                "required_params": ["personId", "gamePk"],
+                "all_params": ["ver", "personId", "gamePk", "fields"],
+                "notes": (
+                    "Specify 'current' instead of a gamePk for a player's current "
+                    "game stats."
+                ),
+            },
+            "schedule": {
+                "url": "https://statsapi.mlb.com/api/{ver}/schedule",
+                "required_params": ["sportId or gamePk or gamePks"],
+                "all_params": [
+                    "ver",
+                    "scheduleType",
+                    "eventTypes",
+                    "hydrate",
+                    "teamId",
+                    "leagueId",
+                    "sportId",
+                    "gamePk",
+                    "gamePks",
+                    "venueIds",
+                    "gameTypes",
+                    "date",
+                    "startDate",
+                    "endDate",
+                    "opponentId",
+                    "fields",
+                    "season",
+                ],
+                "notes": None,
+            },
+            "standings": {
+                "url": "https://statsapi.mlb.com/api/{ver}/standings",
+                "required_params": ["leagueId"],
+                "all_params": [
+                    "ver",
+                    "leagueId",
+                    "season",
+                    "standingsTypes",
+                    "date",
+                    "hydrate",
+                    "fields",
+                ],
+                "notes": None,
+            },
+            "stats": {
+                "url": "https://statsapi.mlb.com/api/{ver}/stats",
+                "required_params": ["stats", "group"],
+                "all_params": [
+                    "ver",
+                    "stats",
+                    "playerPool",
+                    "position",
+                    "teamId",
+                    "leagueId",
+                    "limit",
+                    "offset",
+                    "group",
+                    "gameType",
+                    "season",
+                    "sportIds",
+                    "sortStat",
+                    "order",
+                    "hydrate",
+                    "fields",
+                    "personId",
+                    "metrics",
+                    "startDate",
+                    "endDate",
+                ],
+                "notes": (
+                    "If no limit is specified, the response will be limited to 50 "
+                    "records."
+                ),
+            },
+            "stats_leaders": {
+                "url": "https://statsapi.mlb.com/api/{ver}/stats/leaders",
+                "required_params": ["leaderCategories"],
+                "all_params": [
+                    "ver",
+                    "leaderCategories",
+                    "playerPool",
+                    "leaderGameTypes",
+                    "statGroup",
+                    "season",
+                    "leagueId",
+                    "sportId",
+                    "hydrate",
+                    "limit",
+                    "fields",
+                    "statType",
+                ],
+                "notes": (
+                    "If excluding season parameter to get all time leaders, include "
+                    "statType=statsSingleSeason or you will likely not get any "
+                    "results."
+                ),
+            },
+            "teams": {
+                "url": "https://statsapi.mlb.com/api/{ver}/teams",
+                "required_params": [],
+                "all_params": [
+                    "ver",
+                    "season",
+                    "activeStatus",
+                    "leagueIds",
+                    "sportId",
+                    "sportIds",
+                    "gameType",
+                    "hydrate",
+                    "fields",
+                ],
+                "notes": None,
+            },
+            "team": {
+                "url": "https://statsapi.mlb.com/api/{ver}/teams/{teamId}",
+                "required_params": ["teamId"],
+                "all_params": [
+                    "ver",
+                    "teamId",
+                    "season",
+                    "sportId",
+                    "hydrate",
+                    "fields",
+                ],
+                "notes": None,
+            },
+            "team_roster": {
+                "url": "https://statsapi.mlb.com/api/{ver}/teams/{teamId}/roster",
+                "required_params": ["teamId"],
+                "all_params": [
+                    "ver",
+                    "teamId",
+                    "rosterType",
+                    "season",
+                    "date",
+                    "hydrate",
+                    "fields",
+                ],
+                "notes": None,
+            },
+            "team_leaders": {
+                "url": "https://statsapi.mlb.com/api/{ver}/teams/{teamId}/leaders",
+                "required_params": ["teamId", "leaderCategories", "season"],
+                "all_params": [
+                    "ver",
+                    "teamId",
+                    "leaderCategories",
+                    "season",
+                    "leaderGameTypes",
+                    "hydrate",
+                    "limit",
+                    "fields",
+                ],
+                "notes": None,
+            },
+            "venues": {
+                "url": "https://statsapi.mlb.com/api/{ver}/venues",
+                "required_params": ["venueIds"],
+                "all_params": ["ver", "venueIds", "season", "hydrate", "fields"],
+                "notes": None,
+            },
+        }
+
+        logger.debug(
+            f"Retrieved information for {len(endpoints)} MLB Stats API endpoints"
+        )
+        return {
+            "endpoints": endpoints,
+            "usage_note": (
+                "Use these endpoints with the get_stats tool by specifying "
+                "the endpoint name and required parameters"
+            ),
+            "example": {"endpoint": "teams", "params": {"sportId": 1}},
+        }
+    except Exception as e:
+        error_msg = f"Error retrieving available endpoints information: {e!s}"
+        logger.error(error_msg)
+        return {"error": str(e)}
+
+
 def main():
     """Initialize and run the MCP baseball server."""
     # Log startup information

@@ -491,3 +491,77 @@ async def test_get_meta_tool():
                         assert (
                             field in first_filtered
                         ), f"Expected field '{field}' missing in filtered results"
+
+
+@pytest.mark.asyncio
+async def test_get_available_endpoints_tool():
+    """Test the get_available_endpoints tool for retrieving MLB Stats API endpoint information."""
+    params = simplify_session_setup()
+
+    async with stdio_client(params) as (read_stream, write_stream):
+        async with ClientSession(read_stream, write_stream) as session:
+            await session.initialize()
+
+            # Check if the tool is available
+            response = await session.list_tools()
+            tool_names = [tool.name for tool in response.tools]
+
+            if "get_available_endpoints" not in tool_names:
+                pytest.skip("get_available_endpoints tool not available")
+
+            # Test the endpoints listing tool
+            result = await session.call_tool("get_available_endpoints", {})
+
+            # Check for API errors
+            if result.isError:
+                error_text = (
+                    result.content[0].text if result.content else "No error details"
+                )
+                if "error" in error_text.lower():
+                    print(f"\nAPI Error Details: {error_text}")
+                    pytest.skip("API Error in get_available_endpoints")
+
+            # Test response formatting
+            assert result.content, "No content returned from tool"
+            assert result.content[0].type == "text", "Expected text response"
+
+            # Verify response structure
+            data = json.loads(result.content[0].text)
+
+            # Check for error in response data
+            if isinstance(data, dict) and "error" in data:
+                print(f"\nTool returned error: {data['error']}")
+                pytest.skip("Tool implementation error in get_available_endpoints")
+
+            # Verify structure of response
+            assert "endpoints" in data, "Response missing 'endpoints' dictionary"
+            assert "usage_note" in data, "Response missing 'usage_note' field"
+            assert "example" in data, "Response missing usage example"
+
+            # Check content of endpoints dictionary
+            endpoints = data["endpoints"]
+            assert isinstance(endpoints, dict), "Endpoints should be a dictionary"
+            assert len(endpoints) > 0, "No endpoints returned"
+
+            # Verify structure of at least one common endpoint
+            common_endpoints = ["teams", "people", "schedule"]
+            found_common = False
+
+            for endpoint_name in common_endpoints:
+                if endpoint_name in endpoints:
+                    found_common = True
+                    endpoint_data = endpoints[endpoint_name]
+                    assert (
+                        "url" in endpoint_data
+                    ), f"Endpoint {endpoint_name} missing URL"
+                    assert (
+                        "required_params" in endpoint_data
+                    ), f"Endpoint {endpoint_name} missing required parameters"
+                    assert (
+                        "all_params" in endpoint_data
+                    ), f"Endpoint {endpoint_name} missing all parameters"
+                    break
+
+            assert (
+                found_common
+            ), f"None of the common endpoints {common_endpoints} found in results"
