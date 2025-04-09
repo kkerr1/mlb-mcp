@@ -367,11 +367,13 @@ async def get_game_pace(
 @mcp.tool()
 async def get_meta(type_name: str, fields: Optional[str] = None) -> Dict[str, Any]:
     """
-    Get available values from StatsAPI for use in other queries, or look up descriptions.
+    Get available values from StatsAPI for use in other queries,
+        or look up descriptions.
 
     Args:
-        type_name: Type of metadata to retrieve (e.g., 'leagueLeaderTypes', 'positions', 'statGroups')
-        fields: Optional comma-separated list of fields to return (limits response fields)
+        type_name: Type of metadata to retrieve
+            (e.g., 'leagueLeaderTypes', 'positions', 'statGroups')
+        fields: Optional fields to return (limits response fields)
 
     Returns:
         Metadata information from the MLB Stats API
