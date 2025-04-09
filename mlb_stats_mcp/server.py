@@ -2,8 +2,8 @@
 MCP server implementation for the baseball project with MLB Stats API integration.
 """
 
-import os
 import logging
+import os
 from typing import Any, Dict, Optional
 
 import statsapi
@@ -44,9 +44,7 @@ def setup_logging():
         logger.addHandler(file_handler)
 
         # Add a message indicating where logs are being sent
-        print(
-            f"MLB Stats API logging configured at {log_level} level, writing to {log_file}"
-        )
+        print(f"Logging configured at {log_level} level, writing to {log_file}")
     else:
         # Stream handler if no log file is specified
         stream_handler = logging.StreamHandler()
@@ -89,7 +87,7 @@ async def get_stats(endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
         logger.debug(f"MLB Stats API response received for endpoint: {endpoint}")
         return result
     except Exception as e:
-        error_msg = f"Error accessing MLB Stats API endpoint {endpoint}: {str(e)}"
+        error_msg = f"Error accessing MLB Stats API endpoint {endpoint}: {e!s}"
         logger.error(error_msg)
         return {"error": str(e), "params": params}
 
@@ -130,7 +128,7 @@ async def get_schedule(
         logger.debug(f"Retrieved schedule data: {len(result)} game(s)")
         return result
     except Exception as e:
-        error_msg = f"Error retrieving schedule: {str(e)}"
+        error_msg = f"Error retrieving schedule: {e!s}"
         logger.error(error_msg)
         return {"error": str(e), "params_sent": kwargs}
 
@@ -165,14 +163,12 @@ async def get_player_stats(
         if season is not None:
             kwargs["season"] = season
 
-        logger.debug(
-            f"Retrieving player stats for player ID: {player_id}, group: {group}, type: {stats}"
-        )
+        logger.debug(f"Stats for player ID: {player_id}, group: {group}, type: {stats}")
         result = statsapi.player_stat_data(**kwargs)
         logger.debug(f"Retrieved stats for player ID: {player_id}")
         return result
     except Exception as e:
-        error_msg = f"Error retrieving player stats for player ID {player_id}: {str(e)}"
+        error_msg = f"Error retrieving player stats for player ID {player_id}: {e!s}"
         logger.error(error_msg)
         return {"error": str(e), "params_sent": kwargs}
 
@@ -212,7 +208,7 @@ async def get_standings(
         logger.debug(f"Retrieved standings data for {standings_types}")
         return result
     except Exception as e:
-        error_msg = f"Error retrieving standings: {str(e)}"
+        error_msg = f"Error retrieving standings: {e!s}"
         logger.error(error_msg)
         return {"error": str(e), "params_sent": kwargs}
 
@@ -240,16 +236,8 @@ async def get_team_leaders(
         Team leader data from the MLB Stats API
     """
     try:
-        # Prepare parameters for logging
-        params = {
-            "team_id": team_id,
-            "leader_category": leader_category,
-            "season": season,
-            "limit": 10 if limit is None else limit,
-        }
-
         logger.debug(
-            f"Retrieving team leaders for team ID: {team_id}, category: {leader_category}"
+            f"Retrieving team leaders for team: {team_id} | category: {leader_category}"
         )
 
         # Call the formatted leaders function that returns more detailed data
@@ -271,7 +259,7 @@ async def get_team_leaders(
             "teamLeaders": True,  # Flag to indicate this contains team leaders
         }
     except Exception as e:
-        error_msg = f"Error retrieving team leaders for team ID {team_id}: {str(e)}"
+        error_msg = f"Error retrieving team leaders for team ID {team_id}: {e!s}"
         logger.error(error_msg)
         return {"error": str(e), "team_id": team_id, "leader_category": leader_category}
 
@@ -300,7 +288,7 @@ async def lookup_player(name: str) -> Dict[str, Any]:
         # Return with a "people" key for consistency
         return {"people": result}
     except Exception as e:
-        error_msg = f"Error looking up player {name}: {str(e)}"
+        error_msg = f"Error looking up player {name}: {e!s}"
         logger.error(error_msg)
         return {"error": str(e), "name": name}
 
@@ -332,7 +320,7 @@ async def get_boxscore(game_id: int, timecode: Optional[str] = None) -> Dict[str
         # Create a structured response
         return {"game_id": game_id, "boxscore": boxscore_text, "success": True}
     except Exception as e:
-        error_msg = f"Error retrieving boxscore for game ID {game_id}: {str(e)}"
+        error_msg = f"Error retrieving boxscore for game ID {game_id}: {e!s}"
         logger.error(error_msg)
         return {"error": str(e), "game_id": game_id}
 
@@ -371,7 +359,7 @@ async def get_game_pace(
 
         return result
     except Exception as e:
-        error_msg = f"Error retrieving game pace data: {str(e)}"
+        error_msg = f"Error retrieving game pace data: {e!s}"
         logger.error(error_msg)
         return {"error": str(e), "params_sent": kwargs}
 
@@ -381,9 +369,7 @@ def main():
     # Log startup information
     log_level = os.environ.get("MLB_STATS_LOG_LEVEL", "INFO").upper()
     log_file = os.environ.get("MLB_STATS_LOG_FILE", "stdout")
-    logger.info(
-        f"Starting MLB Stats MCP server with logging level: {log_level}, output: {log_file}"
-    )
+    logger.info(f"Starting server with logging level: {log_level}, output: {log_file}")
 
     # Initialize and run the server
     mcp.run(transport="stdio")
