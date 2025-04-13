@@ -74,6 +74,33 @@ The MLB Stats MCP Server supports configurable logging via environment variables
 - `MLB_STATS_LOG_LEVEL` - Sets the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 - `MLB_STATS_LOG_FILE` - Path to log file (if not set, logs to stdout)
 
+## Claude Desktop Integration
+
+To connect this MCP server to Claude Desktop, add a configuration to your `claude_desktop_config.json` file. Here's a template configuration:
+
+```json
+"mcp-baseball-stats": {
+  "command": "{PATH_TO_UV}",
+  "args": [
+    "--directory",
+    "{PROJECT_DIRECTORY}",
+    "run",
+    "python",
+    "-m",
+    "mlb_stats_mcp.server"
+  ],
+  "env": {
+    "MLB_STATS_LOG_FILE": "{LOG_FILE_PATH}",
+    "MLB_STATS_LOG_LEVEL": "DEBUG"
+  }
+}
+```
+
+Replace the following placeholders:
+- `{PATH_TO_UV}`: Path to your uv installation (e.g., `~/.local/bin/uv`)
+- `{PROJECT_DIRECTORY}`: Path to your project directory
+- `{LOG_FILE_PATH}`: Path where you want to store the log file
+
 ## Technologies Used
 
 - `mcp[cli]` - Machine-Learning Chat Protocol for tool definition
