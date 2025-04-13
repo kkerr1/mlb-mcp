@@ -44,7 +44,7 @@ def setup_logging():
         logger.addHandler(file_handler)
 
         # Add a message indicating where logs are being sent
-        print(f"Logging configured at {log_level} level, writing to {log_file}")
+        logger.info(f"Logging configured at {log_level} level, writing to {log_file}")
     else:
         # Stream handler if no log file is specified
         stream_handler = logging.StreamHandler()
@@ -52,7 +52,7 @@ def setup_logging():
         logger.addHandler(stream_handler)
 
         # Add a message indicating where logs are being sent
-        print(
+        logger.info(
             f"MLB Stats API logging configured at {log_level} level, writing to stdout"
         )
 
@@ -112,12 +112,11 @@ async def get_schedule(
         Schedule data from the MLB Stats API
     """
     try:
-        # Pass parameters directly as keyword arguments
         kwargs = {}
         if date is not None:
             kwargs["date"] = date
         if team_id is not None:
-            kwargs["team"] = team_id  # API expects 'team', not 'teamId'
+            kwargs["team"] = team_id
         if sport_id != 1:
             kwargs["sportId"] = sport_id
         if game_type is not None:
@@ -153,11 +152,10 @@ async def get_player_stats(
         Player statistics from the MLB Stats API
     """
     try:
-        # Call player_stat_data directly with keyword arguments
         kwargs = {
             "personId": player_id,
             "group": group,
-            "type": stats,  # API expects 'type', not 'stats'
+            "type": stats,
         }
 
         if season is not None:
@@ -193,7 +191,6 @@ async def get_standings(
         Standings data from the MLB Stats API
     """
     try:
-        # Call standings_data directly with keyword arguments
         kwargs = {"standingsTypes": standings_types}
 
         if league_id is not None:
@@ -240,7 +237,6 @@ async def get_team_leaders(
             f"Retrieving team leaders for team: {team_id} | category: {leader_category}"
         )
 
-        # Call the formatted leaders function that returns more detailed data
         leaders_text = statsapi.team_leaders(
             team_id,
             leader_category,
@@ -250,13 +246,12 @@ async def get_team_leaders(
 
         logger.debug(f"Retrieved team leaders data for team ID: {team_id}")
 
-        # Convert the text response to a more structured format
         return {
             "teamId": team_id,
             "leaderCategory": leader_category,
             "season": season,
             "results": leaders_text,
-            "teamLeaders": True,  # Flag to indicate this contains team leaders
+            "teamLeaders": True,
         }
     except Exception as e:
         error_msg = f"Error retrieving team leaders for team ID {team_id}: {e!s}"
@@ -277,7 +272,6 @@ async def lookup_player(name: str) -> Dict[str, Any]:
     """
     try:
         logger.debug(f"Looking up player with name: {name}")
-        # lookup_player takes name as a direct argument
         result = statsapi.lookup_player(name)
 
         if result:
@@ -285,7 +279,6 @@ async def lookup_player(name: str) -> Dict[str, Any]:
         else:
             logger.info(f"No players found matching: {name}")
 
-        # Return with a "people" key for consistency
         return {"people": result}
     except Exception as e:
         error_msg = f"Error looking up player {name}: {e!s}"
@@ -341,8 +334,7 @@ async def get_game_pace(
         Game pace data from the MLB Stats API
     """
     try:
-        # Pass parameters directly as keyword arguments
-        kwargs = {"sportId": 1}  # Set default sportId
+        kwargs = {"sportId": 1}  # 1 is MLB
 
         if season is not None:
             kwargs["season"] = season
@@ -352,7 +344,6 @@ async def get_game_pace(
         logger.debug(f"Retrieving game pace data with params: {kwargs}")
         result = statsapi.game_pace_data(**kwargs)
 
-        # Log more detailed information about what was retrieved
         season_txt = f"season {season}" if season else "current season"
         team_txt = f"team ID {team_id}" if team_id else "all teams"
         logger.debug(f"Retrieved game pace data for {season_txt}, {team_txt}")
@@ -758,12 +749,6 @@ async def get_available_endpoints() -> Dict[str, Any]:
 
 def main():
     """Initialize and run the MCP baseball server."""
-    # Log startup information
-    log_level = os.environ.get("MLB_STATS_LOG_LEVEL", "INFO").upper()
-    log_file = os.environ.get("MLB_STATS_LOG_FILE", "stdout")
-    logger.info(f"Starting server with logging level: {log_level}, output: {log_file}")
-
-    # Initialize and run the server
     mcp.run(transport="stdio")
 
 

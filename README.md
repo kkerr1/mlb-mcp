@@ -63,16 +63,6 @@ The MLB Stats MCP Server supports configurable logging via environment variables
 - `MLB_STATS_LOG_LEVEL` - Sets the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 - `MLB_STATS_LOG_FILE` - Path to log file (if not set, logs to stdout)
 
-Example usage:
-
-```bash
-# Log debug messages to a file
-MLB_STATS_LOG_LEVEL=DEBUG MLB_STATS_LOG_FILE=./mlb_stats.log python -m mlb_stats_mcp.server
-
-# Log info messages to stdout
-MLB_STATS_LOG_LEVEL=INFO python -m mlb_stats_mcp.server
-```
-
 ## Technologies Used
 
 - `mcp[cli]` - Machine-Learning Chat Protocol for tool definition
