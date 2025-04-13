@@ -4,9 +4,17 @@ A Python project that creates a Machine-Learning Chat Protocol (MCP) server for 
 
 ## Project Structure
 
-- `mlb_stats_mcp/server.py` - Core MCP server implementation with MLB StatsAPI tools
-- `mlb_stats_mcp/tests/` - Test suite for verifying server functionality
+- `mlb_stats_mcp/` - Main package directory
+  - `server.py` - Core MCP server implementation
+  - `tools/` - MCP tool implementations
+    - `mlb_statsapi_tools.py` - MLB StatsAPI tool definitions
+    - `statcast_tools.py` - Statcast data tool definitions
+  - `utils/` - Utility modules
+    - `logging_config.py` - Logging configuration
+  - `tests/` - Test suite for verifying server functionality
 - `pyproject.toml` - Project configuration and dependencies
+- `.pre-commit-config.yaml` - Pre-commit hooks configuration
+- `.github/` - GitHub Actions workflows
 
 ## Features
 
@@ -45,7 +53,7 @@ uv pip install -e .
 The project includes comprehensive pytest tests for the MCP server functionality:
 
 ```bash
-uv run pytest
+uv run pytest -v
 ```
 
 Tests verify all MLB StatsAPI tools work correctly with the MCP protocol, establishing connections, making API calls, and processing responses.
