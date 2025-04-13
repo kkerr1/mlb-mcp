@@ -1,7 +1,7 @@
 # MLB Stats MCP Server
 
-[![Tests](https://github.com/etweisberg/mcp-baseball-stats/actions/workflows/test.yml/badge.svg)](https://github.com/etweisberg/baseball/actions/workflows/test.yml)
-[![Pre-commit](https://github.com/etweisberg/mcp-baseball-stats/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/etweisberg/baseball/actions/workflows/pre-commit.yml)
+[![Tests](https://github.com/etweisberg/mcp-baseball-stats/actions/workflows/test.yml/badge.svg)](https://github.com/etweisberg/baseball/mcp-baseball-stats/workflows/test.yml)
+[![Pre-commit](https://github.com/etweisberg/mcp-baseball-stats/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/etweisberg/mcp-baseball-stats/actions/workflows/pre-commit.yml)
 
 A Python project that creates a Machine-Learning Chat Protocol (MCP) server for accessing MLB statistics data through the MLB StatsAPI. This server provides structured API access to baseball statistics that can be used with MCP-compatible clients.
 
