@@ -111,6 +111,19 @@ async def get_last_game(team_id: int) -> Dict[str, Any]:
     return await mlb_statsapi_tools.get_last_game(team_id)
 
 
+@mcp.tool()
+async def get_league_leader_data(
+    leader_categories: str,
+    season: Optional[int] = None,
+    limit: Optional[int] = None,
+    stat_group: Optional[str] = None,
+    league_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    return await mlb_statsapi_tools.get_league_leader_data(
+        leader_categories, season, limit, stat_group, league_id
+    )
+
+
 def main():
     """Initialize and run the MCP baseball server."""
     logger.info("Starting MLB Stats MCP server")

@@ -815,3 +815,63 @@ async def get_last_game(team_id: int) -> Dict[str, Any]:
         error_msg = f"Error retrieving last game for team ID {team_id}: {e!s}"
         logger.error(error_msg)
         return {"error": str(e), "team_id": team_id}
+
+
+async def get_league_leader_data(
+    leader_categories: str,
+    season: Optional[int] = None,
+    limit: Optional[int] = None,
+    stat_group: Optional[str] = None,
+    league_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """
+    Get league leader statistics for specified categories.
+
+    Args:
+        leader_categories: Comma-separated list of stat categories
+            (e.g., 'homeRuns,strikeouts')
+        season: Season year (defaults to current season)
+        limit: Number of leaders to return (defaults to all)
+        stat_group: Stat group (e.g., 'hitting', 'pitching', 'fielding')
+        league_id: MLB league ID to filter by
+
+    Returns:
+        Dictionary containing:
+        - leaders: List of leader data for each category
+        - season: The season the data is from
+        - categories: List of categories requested
+    """
+    try:
+        logger.debug(
+            f"Retrieving league leader data for categories: {leader_categories}"
+        )
+
+        # Build parameters dictionary
+        params = {
+            "leaderCategories": leader_categories,
+        }
+
+        if season is not None:
+            params["season"] = season
+        if limit is not None:
+            params["limit"] = limit
+        if stat_group is not None:
+            params["statGroup"] = stat_group
+        if league_id is not None:
+            params["leagueId"] = league_id
+
+        # Get leader data
+        leader_data = statsapi.league_leader_data(**params)
+
+        result = {
+            "leaders": leader_data,
+            "season": season if season is not None else "current",
+            "categories": leader_categories.split(","),
+        }
+
+        logger.debug(f"Retrieved league leader data for {len(leader_data)} categories")
+        return result
+    except Exception as e:
+        error_msg = f"Error retrieving league leader data: {e!s}"
+        logger.error(error_msg)
+        return {"error": str(e), "params": params}

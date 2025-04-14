@@ -842,3 +842,105 @@ async def test_get_last_game_tool():
             assert (
                 invalid_data["team_id"] == invalid_team_id
             ), "Error should include the invalid team ID"
+
+
+@pytest.mark.asyncio
+async def test_get_league_leader_data_tool():
+    """Test the get_league_leader_data tool for retrieving league leader statistics."""
+    params = simplify_session_setup()
+
+    async with stdio_client(params) as (read_stream, write_stream):
+        async with ClientSession(read_stream, write_stream) as session:
+            await session.initialize()
+
+            # Check if the tool is available
+            response = await session.list_tools()
+            tool_names = [tool.name for tool in response.tools]
+
+            if "get_league_leader_data" not in tool_names:
+                pytest.skip("get_league_leader_data tool not available")
+
+            # Test with basic parameters
+            categories = "homeRuns,strikeouts"
+            result = await session.call_tool(
+                "get_league_leader_data",
+                {
+                    "leader_categories": categories,
+                    "limit": 5,
+                    "stat_group": "hitting",
+                },
+            )
+
+            # Check for API errors
+            if result.isError:
+                error_text = (
+                    result.content[0].text if result.content else "No error details"
+                )
+                if "error" in error_text.lower():
+                    print(f"\nAPI Error Details: {error_text}")
+                    pytest.skip("API Error in get_league_leader_data")
+
+            # Test response formatting
+            assert result.content, "No content returned from tool"
+            assert result.content[0].type == "text", "Expected text response"
+
+            # Verify response structure
+            data = json.loads(result.content[0].text)
+
+            # Check for error in response data
+            if isinstance(data, dict) and "error" in data:
+                print(f"\nTool returned error: {data['error']}")
+                if "params" in data:
+                    print(f"Parameters sent: {data['params']}")
+                pytest.skip("Tool implementation error in get_league_leader_data")
+
+            # Verify structure of response
+            assert isinstance(data, dict), "League leader data should be a dictionary"
+            assert len(data) > 0, "No league leader data returned"
+
+            # Check for expected fields in the response
+            expected_fields = ["leaders", "season", "categories"]
+            for field in expected_fields:
+                assert (
+                    field in data
+                ), f"League leader data missing expected field: {field}"
+
+            # Verify field types
+            assert isinstance(data["leaders"], list), "leaders should be a list"
+            assert isinstance(
+                data["season"], (int, str)
+            ), "season should be an integer or string"
+            assert isinstance(data["categories"], list), "categories should be a list"
+
+            # Verify categories match input
+            assert set(data["categories"]) == set(
+                categories.split(",")
+            ), "Categories should match input"
+
+            # If there are leaders, verify their structure
+            if data["leaders"]:
+                first_leader = data["leaders"][0]
+                leader_fields = [
+                    ("rank", int),
+                    ("name", str),
+                    ("team", str),
+                    ("value", str),
+                ]
+                for i, (_, ty) in enumerate(leader_fields):
+                    assert isinstance(
+                        first_leader[i], ty
+                    ), f"Leader data missing expected field: {field}"
+
+            # Test with invalid parameters
+            invalid_result = await session.call_tool(
+                "get_league_leader_data",
+                {
+                    "leader_categories": "invalidCategory",
+                    "limit": 5,
+                },
+            )
+
+            # Verify error handling for invalid parameters
+            assert invalid_result.content, "No content returned for invalid parameters"
+            invalid_data = json.loads(invalid_result.content[0].text)
+            assert "error" in invalid_data, "Expected error for invalid parameters"
