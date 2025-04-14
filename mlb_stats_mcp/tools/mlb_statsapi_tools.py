@@ -754,3 +754,28 @@ async def get_notes(endpoint: str) -> Dict[str, Any]:
         error_msg = f"Error retrieving notes for endpoint {endpoint}: {e!s}"
         logger.error(error_msg)
         return {"error": str(e), "endpoint": endpoint}
+
+
+async def get_game_scoring_play_data(game_id: int) -> Dict[str, Any]:
+    """
+    Retrieve scoring play data for a specific MLB game.
+
+    Args:
+        game_id: The MLB game ID to get scoring play data for
+
+    Returns:
+        Dictionary containing scoring play data for the game, including:
+        - scoring plays
+        - inning information
+        - team scoring details
+        - any other relevant scoring information
+    """
+    try:
+        logger.debug(f"Retrieving scoring play data for game ID: {game_id}")
+        result = statsapi.game_scoring_play_data(game_id)
+        logger.debug(f"Retrieved scoring play data for game ID: {game_id}")
+        return result
+    except Exception as e:
+        error_msg = f"Error retrieving scoring play data for game ID {game_id}: {e!s}"
+        logger.error(error_msg)
+        return {"error": str(e), "game_id": game_id}

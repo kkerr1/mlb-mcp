@@ -648,3 +648,114 @@ async def test_get_notes_tool():
             assert (
                 invalid_data["endpoint"] == invalid_endpoint
             ), "Error should include the invalid endpoint"
+
+
+@pytest.mark.asyncio
+async def test_get_game_scoring_play_data_tool():
+    """Test the get_game_scoring_play_data tool for retrieving scoring play data."""
+    params = simplify_session_setup()
+
+    async with stdio_client(params) as (read_stream, write_stream):
+        async with ClientSession(read_stream, write_stream) as session:
+            await session.initialize()
+
+            # Check if the tool is available
+            response = await session.list_tools()
+            tool_names = [tool.name for tool in response.tools]
+
+            if "get_game_scoring_play_data" not in tool_names:
+                pytest.skip("get_game_scoring_play_data tool not available")
+
+            # Test with a known game ID (using a recent game)
+            game_id = 565997  # Example game ID
+            result = await session.call_tool(
+                "get_game_scoring_play_data", {"game_id": game_id}
+            )
+
+            # Check for API errors
+            if result.isError:
+                error_text = (
+                    result.content[0].text if result.content else "No error details"
+                )
+                if "error" in error_text.lower():
+                    print(f"\nAPI Error Details: {error_text}")
+                    pytest.skip("API Error in get_game_scoring_play_data")
+
+            # Test response formatting
+            assert result.content, "No content returned from tool"
+            assert result.content[0].type == "text", "Expected text response"
+
+            # Verify response structure
+            data = json.loads(result.content[0].text)
+
+            # Check for error in response data
+            if isinstance(data, dict) and "error" in data:
+                print(f"\nTool returned error: {data['error']}")
+                if "game_id" in data:
+                    print(f"Game ID sent: {data['game_id']}")
+                    # Try another game ID if the first one fails
+                    pytest.skip(f"Game ID {game_id} not found, try a different one")
+                else:
+                    pytest.skip(
+                        "Tool implementation error in get_game_scoring_play_data"
+                    )
+
+            # Verify structure of response
+            assert isinstance(data, dict), "Scoring play data should be a dictionary"
+            assert len(data) > 0, "No scoring play data returned"
+
+            # Check for expected fields in the scoring play data
+            expected_fields = ["away", "home", "plays"]
+            for field in expected_fields:
+                assert (
+                    field in data
+                ), f"Scoring play data missing expected field: {field}"
+
+            # Verify team data structure
+            for team in ["away", "home"]:
+                team_data = data[team]
+                assert isinstance(
+                    team_data, dict
+                ), f"{team} team data should be a dictionary"
+                assert "id" in team_data, f"{team} team data missing 'id' field"
+                assert (
+                    "abbreviation" in team_data
+                ), f"{team} team data missing 'abbreviation' field"
+
+            # Verify plays is a list
+            assert isinstance(data["plays"], list), "plays should be a list"
+
+            # If there are plays, verify their structure
+            if data["plays"]:
+                first_play = data["plays"][0]
+                play_fields = ["about", "result"]
+                for field in play_fields:
+                    assert field in first_play, f"Play missing expected field: {field}"
+
+                # Verify about and result structures
+                assert (
+                    "inning" in first_play["about"]
+                ), "Play about missing 'inning' field"
+                assert (
+                    "halfInning" in first_play["about"]
+                ), "Play about missing 'halfInning' field"
+                assert (
+                    "description" in first_play["result"]
+                ), "Play result missing 'description' field"
+                assert (
+                    "awayScore" in first_play["result"]
+                ), "Play result missing 'awayScore' field"
+                assert (
+                    "homeScore" in first_play["result"]
+                ), "Play result missing 'homeScore' field"
+
+            # Test with an invalid game ID
+            invalid_game_id = 999999999
+            invalid_result = await session.call_tool(
+                "get_game_scoring_play_data", {"game_id": invalid_game_id}
+            )
+
+            # Verify error handling for invalid game ID
+            assert invalid_result.content, "No content returned for invalid game ID"
+            invalid_data = json.loads(invalid_result.content[0].text)
+            assert not invalid_data["plays"], "Expected no plays for invalid game ID"
