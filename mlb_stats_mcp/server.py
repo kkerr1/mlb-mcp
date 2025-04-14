@@ -96,6 +96,11 @@ async def get_available_endpoints() -> Dict[str, Any]:
     return await mlb_statsapi_tools.get_available_endpoints()
 
 
+@mcp.tool()
+async def get_notes(endpoint: str) -> Dict[str, Any]:
+    return await mlb_statsapi_tools.get_notes(endpoint)
+
+
 def main():
     """Initialize and run the MCP baseball server."""
     logger.info("Starting MLB Stats MCP server")

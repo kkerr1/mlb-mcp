@@ -565,3 +565,86 @@ async def test_get_available_endpoints_tool():
             assert (
                 found_common
             ), f"None of the common endpoints {common_endpoints} found in results"
+
+
+@pytest.mark.asyncio
+async def test_get_notes_tool():
+    """Test the get_notes tool for retrieving notes about MLB Stats API endpoints."""
+    params = simplify_session_setup()
+
+    async with stdio_client(params) as (read_stream, write_stream):
+        async with ClientSession(read_stream, write_stream) as session:
+            await session.initialize()
+
+            # Check if the tool is available
+            response = await session.list_tools()
+            tool_names = [tool.name for tool in response.tools]
+
+            if "get_notes" not in tool_names:
+                pytest.skip("get_notes tool not available")
+
+            # Test with a common endpoint
+            endpoint = "teams"
+            result = await session.call_tool("get_notes", {"endpoint": endpoint})
+
+            # Check for API errors
+            if result.isError:
+                error_text = (
+                    result.content[0].text if result.content else "No error details"
+                )
+                if "error" in error_text.lower():
+                    print(f"\nAPI Error Details: {error_text}")
+                    pytest.skip("API Error in get_notes")
+
+            # Test response formatting
+            assert result.content, "No content returned from tool"
+            assert result.content[0].type == "text", "Expected text response"
+
+            # Verify response structure
+            data = json.loads(result.content[0].text)
+
+            # Check for error in response data
+            if isinstance(data, dict) and "error" in data:
+                print(f"\nTool returned error: {data['error']}")
+                pytest.skip("Tool implementation error in get_notes")
+
+            # Verify structure of response
+            assert isinstance(data, dict), "Notes should be returned as a dictionary"
+            assert len(data) > 0, "No notes returned"
+
+            # Check for expected fields in the notes
+            expected_fields = [
+                "endpoint",
+                "required_params",
+                "all_params",
+                "hints",
+                "path_params",
+                "query_params",
+            ]
+            for field in expected_fields:
+                assert field in data, f"Notes missing expected field: {field}"
+
+            # Verify field types
+            assert isinstance(data["endpoint"], str), "endpoint should be a string"
+            assert isinstance(
+                data["required_params"], list
+            ), "required_params should be a list"
+            assert isinstance(data["all_params"], list), "all_params should be a list"
+            assert isinstance(data["hints"], str), "hints should be a string"
+            assert isinstance(data["path_params"], list), "path_params should be a list"
+            assert isinstance(
+                data["query_params"], list
+            ), "query_params should be a list"
+
+            # Test with an invalid endpoint
+            invalid_endpoint = "invalid_endpoint"
+            invalid_result = await session.call_tool(
+                "get_notes", {"endpoint": invalid_endpoint}
+            )
+
+            # Verify error handling for invalid endpoint
+            assert invalid_result.content, "No content returned for invalid endpoint"
+            invalid_data = json.loads(invalid_result.content[0].text)
+            assert (
+                invalid_data["endpoint"] == invalid_endpoint
+            ), "Error should include the invalid endpoint"

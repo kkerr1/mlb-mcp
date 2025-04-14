@@ -678,3 +678,79 @@ async def get_available_endpoints() -> Dict[str, Any]:
         error_msg = f"Error retrieving available endpoints information: {e!s}"
         logger.error(error_msg)
         return {"error": str(e)}
+
+
+async def get_notes(endpoint: str) -> Dict[str, Any]:
+    """
+    Retrieve notes for a given MLB Stats API endpoint,
+        including required parameters and hints.
+
+    Args:
+        endpoint: The API endpoint to get notes for
+            (e.g., 'stats', 'schedule', 'standings')
+
+    Returns:
+        Dictionary containing notes about the endpoint, including:
+        - required_params: List of required parameters
+        - all_params: List of all available parameters
+        - hints: String containing usage hints
+        - path_params: List of path parameters
+        - query_params: List of query parameters
+    """
+    try:
+        logger.debug(f"Retrieving notes for endpoint: {endpoint}")
+        notes_text = statsapi.notes(endpoint)
+        logger.debug(f"Retrieved notes for endpoint: {endpoint}")
+
+        # Parse the notes text into a structured dictionary
+        result = {
+            "endpoint": endpoint,
+            "required_params": [],
+            "all_params": [],
+            "hints": "",
+            "path_params": [],
+            "query_params": [],
+        }
+
+        # Split the notes into lines for processing
+        lines = notes_text.split("\n")
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            if "All path parameters:" in line:
+                params = (
+                    line.split(":")[1].strip().strip("[]").replace("'", "").split(", ")
+                )
+                result["path_params"] = [p for p in params if p]
+            elif "All query parameters:" in line:
+                params = (
+                    line.split(":")[1].strip().strip("[]").replace("'", "").split(", ")
+                )
+                result["query_params"] = [p for p in params if p]
+            elif "Required path parameters" in line:
+                params = (
+                    line.split(":")[1].strip().strip("[]").replace("'", "").split(", ")
+                )
+                result["required_params"].extend([p for p in params if p])
+            elif "Required query parameters:" in line:
+                params = (
+                    line.split(":")[1].strip().strip("[]").replace("'", "").split(", ")
+                )
+                if params and params[0] != "None":
+                    result["required_params"].extend([p for p in params if p])
+            elif line.startswith("The hydrate function") or line.startswith(
+                "Call the endpoint"
+            ):
+                result["hints"] += line + "\n"
+
+        # Combine path and query params for all_params
+        result["all_params"] = result["path_params"] + result["query_params"]
+
+        return result
+    except Exception as e:
+        error_msg = f"Error retrieving notes for endpoint {endpoint}: {e!s}"
+        logger.error(error_msg)
+        return {"error": str(e), "endpoint": endpoint}
