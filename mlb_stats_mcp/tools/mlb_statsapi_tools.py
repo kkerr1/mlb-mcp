@@ -779,3 +779,39 @@ async def get_game_scoring_play_data(game_id: int) -> Dict[str, Any]:
         error_msg = f"Error retrieving scoring play data for game ID {game_id}: {e!s}"
         logger.error(error_msg)
         return {"error": str(e), "game_id": game_id}
+
+
+async def get_last_game(team_id: int) -> Dict[str, Any]:
+    """
+    Get the game ID for a team's most recent game.
+
+    Args:
+        team_id: The MLB team ID to get the last game for
+
+    Returns:
+        Dictionary containing:
+        - game_id: The ID of the team's most recent game
+        - team_id: The ID of the team
+        - date: The date of the game (YYYY-MM-DD)
+        - status: The status of the game (e.g., 'Final', 'In Progress')
+    """
+    try:
+        logger.debug(f"Retrieving last game for team ID: {team_id}")
+        game_id = statsapi.last_game(team_id)
+        logger.debug(f"Retrieved last game ID {game_id} for team ID: {team_id}")
+
+        # Get additional game details
+        game_data = statsapi.get("game", {"gamePk": game_id})
+
+        result = {
+            "game_id": game_id,
+            "team_id": team_id,
+            "date": game_data["gameData"]["datetime"]["dateTime"].split("T")[0],
+            "status": game_data["gameData"]["status"]["detailedState"],
+        }
+
+        return result
+    except Exception as e:
+        error_msg = f"Error retrieving last game for team ID {team_id}: {e!s}"
+        logger.error(error_msg)
+        return {"error": str(e), "team_id": team_id}

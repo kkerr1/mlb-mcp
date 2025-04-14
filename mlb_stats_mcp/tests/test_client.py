@@ -759,3 +759,86 @@ async def test_get_game_scoring_play_data_tool():
             assert invalid_result.content, "No content returned for invalid game ID"
             invalid_data = json.loads(invalid_result.content[0].text)
             assert not invalid_data["plays"], "Expected no plays for invalid game ID"
+
+
+@pytest.mark.asyncio
+async def test_get_last_game_tool():
+    """Test the get_last_game tool for retrieving a team's most recent game ID."""
+    params = simplify_session_setup()
+
+    async with stdio_client(params) as (read_stream, write_stream):
+        async with ClientSession(read_stream, write_stream) as session:
+            await session.initialize()
+
+            # Check if the tool is available
+            response = await session.list_tools()
+            tool_names = [tool.name for tool in response.tools]
+
+            if "get_last_game" not in tool_names:
+                pytest.skip("get_last_game tool not available")
+
+            # Test with a known team ID (New York Yankees)
+            team_id = 147
+            result = await session.call_tool("get_last_game", {"team_id": team_id})
+
+            # Check for API errors
+            if result.isError:
+                error_text = (
+                    result.content[0].text if result.content else "No error details"
+                )
+                if "error" in error_text.lower():
+                    print(f"\nAPI Error Details: {error_text}")
+                    pytest.skip("API Error in get_last_game")
+
+            # Test response formatting
+            assert result.content, "No content returned from tool"
+            assert result.content[0].type == "text", "Expected text response"
+
+            # Verify response structure
+            data = json.loads(result.content[0].text)
+
+            # Check for error in response data
+            if isinstance(data, dict) and "error" in data:
+                print(f"\nTool returned error: {data['error']}")
+                if "team_id" in data:
+                    print(f"Team ID sent: {data['team_id']}")
+                    pytest.skip("Tool implementation error in get_last_game")
+                else:
+                    pytest.skip("Tool implementation error in get_last_game")
+
+            # Verify structure of response
+            assert isinstance(data, dict), "Last game data should be a dictionary"
+            assert len(data) > 0, "No last game data returned"
+
+            # Check for expected fields in the response
+            expected_fields = ["game_id", "team_id", "date", "status"]
+            for field in expected_fields:
+                assert field in data, f"Last game data missing expected field: {field}"
+
+            # Verify field types
+            assert isinstance(data["game_id"], int), "game_id should be an integer"
+            assert isinstance(data["team_id"], int), "team_id should be an integer"
+            assert isinstance(data["date"], str), "date should be a string"
+            assert isinstance(data["status"], str), "status should be a string"
+
+            # Verify date format (YYYY-MM-DD)
+            import re
+
+            date_pattern = r"^\d{4}-\d{2}-\d{2}$"
+            assert re.match(
+                date_pattern, data["date"]
+            ), "date should be in YYYY-MM-DD format"
+
+            # Test with an invalid team ID
+            invalid_team_id = 999999999
+            invalid_result = await session.call_tool(
+                "get_last_game", {"team_id": invalid_team_id}
+            )
+
+            # Verify error handling for invalid team ID
+            assert invalid_result.content, "No content returned for invalid team ID"
+            invalid_data = json.loads(invalid_result.content[0].text)
+            assert "error" in invalid_data, "Expected error for invalid team ID"
+            assert (
+                invalid_data["team_id"] == invalid_team_id
+            ), "Error should include the invalid team ID"

@@ -106,6 +106,11 @@ async def get_game_scoring_play_data(game_id: int) -> Dict[str, Any]:
     return await mlb_statsapi_tools.get_game_scoring_play_data(game_id)
 
 
+@mcp.tool()
+async def get_last_game(team_id: int) -> Dict[str, Any]:
+    return await mlb_statsapi_tools.get_last_game(team_id)
+
+
 def main():
     """Initialize and run the MCP baseball server."""
     logger.info("Starting MLB Stats MCP server")
