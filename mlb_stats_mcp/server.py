@@ -124,6 +124,11 @@ async def get_league_leader_data(
     )
 
 
+@mcp.tool()
+async def get_linescore(game_id: int) -> Dict[str, Any]:
+    return await mlb_statsapi_tools.get_linescore(game_id)
+
+
 def main():
     """Initialize and run the MCP baseball server."""
     logger.info("Starting MLB Stats MCP server")

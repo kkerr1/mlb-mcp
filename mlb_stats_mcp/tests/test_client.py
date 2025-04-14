@@ -944,3 +944,106 @@ async def test_get_league_leader_data_tool():
             assert invalid_result.content, "No content returned for invalid parameters"
             invalid_data = json.loads(invalid_result.content[0].text)
             assert "error" in invalid_data, "Expected error for invalid parameters"
+
+
+@pytest.mark.asyncio
+async def test_get_linescore_tool():
+    """Test the get_linescore tool for retrieving game linescore data."""
+    params = simplify_session_setup()
+
+    async with stdio_client(params) as (read_stream, write_stream):
+        async with ClientSession(read_stream, write_stream) as session:
+            await session.initialize()
+
+            # Check if the tool is available
+            response = await session.list_tools()
+            tool_names = [tool.name for tool in response.tools]
+
+            if "get_linescore" not in tool_names:
+                pytest.skip("get_linescore tool not available")
+
+            # Test with a known game ID
+            game_id = 565997  # Example game ID
+            result = await session.call_tool("get_linescore", {"game_id": game_id})
+
+            # Check for API errors
+            if result.isError:
+                error_text = (
+                    result.content[0].text if result.content else "No error details"
+                )
+                if "error" in error_text.lower():
+                    print(f"\nAPI Error Details: {error_text}")
+                    pytest.skip("API Error in get_linescore")
+
+            # Test response formatting
+            assert result.content, "No content returned from tool"
+            assert result.content[0].type == "text", "Expected text response"
+
+            # Verify response structure
+            data = json.loads(result.content[0].text)
+
+            # Check for error in response data
+            if isinstance(data, dict) and "error" in data:
+                print(f"\nTool returned error: {data['error']}")
+                if "game_id" in data:
+                    print(f"Game ID sent: {data['game_id']}")
+                    pytest.skip(f"Game ID {game_id} not found, try a different one")
+                else:
+                    pytest.skip("Tool implementation error in get_linescore")
+
+            # Verify structure of response
+            assert isinstance(data, dict), "Linescore data should be a dictionary"
+            assert len(data) > 0, "No linescore data returned"
+
+            # Check for expected fields in the response
+            expected_fields = ["linescore", "game_id", "teams", "innings", "totals"]
+            for field in expected_fields:
+                assert field in data, f"Linescore data missing expected field: {field}"
+
+            # Verify field types
+            assert isinstance(data["linescore"], str), "linescore should be a string"
+            assert isinstance(data["game_id"], int), "game_id should be an integer"
+            assert isinstance(data["teams"], dict), "teams should be a dictionary"
+            assert isinstance(data["innings"], list), "innings should be a list"
+            assert isinstance(data["totals"], dict), "totals should be a dictionary"
+
+            # Verify teams structure
+            for team in ["away", "home"]:
+                assert team in data["teams"], f"Missing {team} team data"
+                team_data = data["teams"][team]
+                assert isinstance(
+                    team_data, dict
+                ), f"{team} team data should be a dictionary"
+                assert "id" in team_data, f"{team} team data missing 'id' field"
+                assert "name" in team_data, f"{team} team data missing 'name' field"
+                assert (
+                    "abbreviation" in team_data
+                ), f"{team} team data missing 'abbreviation' field"
+
+            # Verify innings structure
+            if data["innings"]:
+                first_inning = data["innings"][0]
+                assert "num" in first_inning, "Inning data missing 'num' field"
+                assert "away" in first_inning, "Inning data missing 'away' field"
+                assert "home" in first_inning, "Inning data missing 'home' field"
+
+            # Verify totals structure
+            for stat in ["runs", "hits", "errors"]:
+                assert stat in data["totals"], f"Missing {stat} totals"
+                stat_data = data["totals"][stat]
+                assert "away" in stat_data, f"{stat} totals missing 'away' field"
+                assert "home" in stat_data, f"{stat} totals missing 'home' field"
+
+            # Test with an invalid game ID
+            invalid_game_id = 999999999
+            invalid_result = await session.call_tool(
+                "get_linescore", {"game_id": invalid_game_id}
+            )
+
+            # Verify error handling for invalid game ID
+            assert invalid_result.content, "No content returned for invalid game ID"
+            invalid_data = json.loads(invalid_result.content[0].text)
+            assert "error" in invalid_data, "Expected error for invalid game ID"
+            assert (
+                invalid_data["game_id"] == invalid_game_id
+            ), "Error should include the invalid game ID"

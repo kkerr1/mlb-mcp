@@ -875,3 +875,81 @@ async def get_league_leader_data(
         error_msg = f"Error retrieving league leader data: {e!s}"
         logger.error(error_msg)
         return {"error": str(e), "params": params}
+
+
+async def get_linescore(game_id: int) -> Dict[str, Any]:
+    """
+    Get formatted linescore data for a specific MLB game.
+
+    Args:
+        game_id: The MLB game ID to get linescore data for
+
+    Returns:
+        Dictionary containing:
+        - linescore: Formatted linescore text
+        - game_id: The ID of the game
+        - teams: Dictionary with home and away team information
+        - innings: List of inning scores
+        - totals: Dictionary with total runs, hits, and errors
+    """
+    try:
+        logger.debug(f"Retrieving linescore for game ID: {game_id}")
+        linescore_text = statsapi.linescore(game_id)
+        logger.debug(f"Retrieved linescore for game ID: {game_id}")
+
+        # Get additional game details for structured data
+        game_data = statsapi.get("game", {"gamePk": game_id})
+
+        # Extract team information
+        teams = {
+            "away": {
+                "id": game_data["gameData"]["teams"]["away"]["id"],
+                "name": game_data["gameData"]["teams"]["away"]["name"],
+                "abbreviation": game_data["gameData"]["teams"]["away"]["abbreviation"],
+            },
+            "home": {
+                "id": game_data["gameData"]["teams"]["home"]["id"],
+                "name": game_data["gameData"]["teams"]["home"]["name"],
+                "abbreviation": game_data["gameData"]["teams"]["home"]["abbreviation"],
+            },
+        }
+
+        # Extract inning scores
+        innings = []
+        for inning in game_data["liveData"]["linescore"]["innings"]:
+            inning_data = {
+                "num": inning["num"],
+                "away": inning.get("away", {}).get("runs", 0),
+                "home": inning.get("home", {}).get("runs", 0),
+            }
+            innings.append(inning_data)
+
+        # Extract totals
+        totals = {
+            "runs": {
+                "away": game_data["liveData"]["linescore"]["teams"]["away"]["runs"],
+                "home": game_data["liveData"]["linescore"]["teams"]["home"]["runs"],
+            },
+            "hits": {
+                "away": game_data["liveData"]["linescore"]["teams"]["away"]["hits"],
+                "home": game_data["liveData"]["linescore"]["teams"]["home"]["hits"],
+            },
+            "errors": {
+                "away": game_data["liveData"]["linescore"]["teams"]["away"]["errors"],
+                "home": game_data["liveData"]["linescore"]["teams"]["home"]["errors"],
+            },
+        }
+
+        result = {
+            "linescore": linescore_text,
+            "game_id": game_id,
+            "teams": teams,
+            "innings": innings,
+            "totals": totals,
+        }
+
+        return result
+    except Exception as e:
+        error_msg = f"Error retrieving linescore for game ID {game_id}: {e!s}"
+        logger.error(error_msg)
+        return {"error": str(e), "game_id": game_id}
