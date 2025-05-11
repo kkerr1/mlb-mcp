@@ -24,6 +24,9 @@ async def get_stats(endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
 
     Returns:
         JSON response from the MLB Stats API
+
+    Raises:
+        Exception: If there's an error accessing the MLB Stats API
     """
     try:
         logger.debug(
@@ -35,7 +38,7 @@ async def get_stats(endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         error_msg = f"Error accessing MLB Stats API endpoint {endpoint}: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "params": params}
+        raise Exception(error_msg) from e
 
 
 async def get_schedule(
@@ -55,6 +58,9 @@ async def get_schedule(
 
     Returns:
         Schedule data from the MLB Stats API
+
+    Raises:
+        Exception: If there's an error retrieving the schedule
     """
     try:
         kwargs = {}
@@ -74,7 +80,7 @@ async def get_schedule(
     except Exception as e:
         error_msg = f"Error retrieving schedule: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "params_sent": kwargs}
+        raise Exception(error_msg) from e
 
 
 async def get_player_stats(
@@ -94,6 +100,9 @@ async def get_player_stats(
 
     Returns:
         Player statistics from the MLB Stats API
+
+    Raises:
+        Exception: If there's an error retrieving player stats
     """
     try:
         kwargs = {
@@ -112,7 +121,7 @@ async def get_player_stats(
     except Exception as e:
         error_msg = f"Error retrieving player stats for player ID {player_id}: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "params_sent": kwargs}
+        raise Exception(error_msg) from e
 
 
 async def get_standings(
@@ -132,6 +141,9 @@ async def get_standings(
 
     Returns:
         Standings data from the MLB Stats API
+
+    Raises:
+        Exception: If there's an error retrieving standings
     """
     try:
         kwargs = {"standingsTypes": standings_types}
@@ -150,7 +162,7 @@ async def get_standings(
     except Exception as e:
         error_msg = f"Error retrieving standings: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "params_sent": kwargs}
+        raise Exception(error_msg) from e
 
 
 # Team and Player Analysis
@@ -162,6 +174,18 @@ async def get_team_roster(
 ) -> Dict[str, Any]:
     """
     Get team roster information.
+
+    Args:
+        team_id: MLB team ID
+        roster_type: Type of roster (active, 40man, etc.)
+        season: Season year (defaults to current season)
+        date: Date in YYYY-MM-DD format (defaults to today)
+
+    Returns:
+        Team roster data from the MLB Stats API
+
+    Raises:
+        Exception: If there's an error retrieving team roster
     """
     try:
         logger.debug(f"Retrieving team roster for team ID: {team_id}")
@@ -171,7 +195,7 @@ async def get_team_roster(
     except Exception as e:
         error_msg = f"Error retrieving team roster for team ID {team_id}: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "team_id": team_id}
+        raise Exception(error_msg) from e
 
 
 async def get_team_leaders(
@@ -193,6 +217,9 @@ async def get_team_leaders(
 
     Returns:
         Team leader data from the MLB Stats API
+
+    Raises:
+        Exception: If there's an error retrieving team leaders
     """
     try:
         logger.debug(
@@ -218,7 +245,7 @@ async def get_team_leaders(
     except Exception as e:
         error_msg = f"Error retrieving team leaders for team ID {team_id}: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "team_id": team_id, "leader_category": leader_category}
+        raise Exception(error_msg) from e
 
 
 async def lookup_player(name: str) -> Dict[str, Any]:
@@ -230,6 +257,9 @@ async def lookup_player(name: str) -> Dict[str, Any]:
 
     Returns:
         Player lookup results from the MLB Stats API
+
+    Raises:
+        Exception: If there's an error looking up player
     """
     try:
         logger.debug(f"Looking up player with name: {name}")
@@ -237,14 +267,14 @@ async def lookup_player(name: str) -> Dict[str, Any]:
 
         if result:
             logger.debug(f"Found {len(result)} player(s) matching: {name}")
+            return {"people": result}
         else:
             logger.info(f"No players found matching: {name}")
-
-        return {"people": result}
+            raise Exception(f"No players found matching: {name}")
     except Exception as e:
         error_msg = f"Error looking up player {name}: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "name": name}
+        raise Exception(error_msg) from e
 
 
 async def get_boxscore(game_id: int, timecode: Optional[str] = None) -> Dict[str, Any]:
@@ -257,6 +287,9 @@ async def get_boxscore(game_id: int, timecode: Optional[str] = None) -> Dict[str
 
     Returns:
         Boxscore data from the MLB Stats API
+
+    Raises:
+        Exception: If there's an error retrieving boxscore
     """
     try:
         logger.debug(f"Retrieving boxscore for game ID: {game_id}")
@@ -275,7 +308,7 @@ async def get_boxscore(game_id: int, timecode: Optional[str] = None) -> Dict[str
     except Exception as e:
         error_msg = f"Error retrieving boxscore for game ID {game_id}: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "game_id": game_id}
+        raise Exception(error_msg) from e
 
 
 # Historical Context Tools
@@ -291,6 +324,9 @@ async def get_game_pace(
 
     Returns:
         Game pace data from the MLB Stats API
+
+    Raises:
+        Exception: If there's an error retrieving game pace data
     """
     try:
         kwargs = {"sportId": 1}  # 1 is MLB
@@ -311,7 +347,7 @@ async def get_game_pace(
     except Exception as e:
         error_msg = f"Error retrieving game pace data: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "params_sent": kwargs}
+        raise Exception(error_msg) from e
 
 
 async def get_meta(type_name: str, fields: Optional[str] = None) -> Dict[str, Any]:
@@ -326,6 +362,9 @@ async def get_meta(type_name: str, fields: Optional[str] = None) -> Dict[str, An
 
     Returns:
         Metadata information from the MLB Stats API
+
+    Raises:
+        Exception: If there's an error retrieving metadata
     """
     try:
         logger.debug(f"Retrieving metadata for type: {type_name}")
@@ -340,7 +379,7 @@ async def get_meta(type_name: str, fields: Optional[str] = None) -> Dict[str, An
     except Exception as e:
         error_msg = f"Error retrieving metadata for type {type_name}: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "type": type_name, "fields": fields}
+        raise Exception(error_msg) from e
 
 
 async def get_available_endpoints() -> Dict[str, Any]:
@@ -349,12 +388,10 @@ async def get_available_endpoints() -> Dict[str, Any]:
     the get_stats tool.
 
     Returns:
-        A dictionary containing details about all MLB Stats API endpoints, including:
-        - endpoint name
-        - URL pattern
-        - required parameters
-        - all available parameters
-        - additional notes (if available)
+        A dictionary containing details about all MLB Stats API endpoints
+
+    Raises:
+        Exception: If there's an error retrieving endpoint information
     """
     try:
         logger.debug("Retrieving available MLB Stats API endpoints information")
@@ -697,7 +734,7 @@ async def get_available_endpoints() -> Dict[str, Any]:
     except Exception as e:
         error_msg = f"Error retrieving available endpoints information: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e)}
+        raise Exception(error_msg) from e
 
 
 async def get_notes(endpoint: str) -> Dict[str, Any]:
@@ -710,12 +747,10 @@ async def get_notes(endpoint: str) -> Dict[str, Any]:
             (e.g., 'stats', 'schedule', 'standings')
 
     Returns:
-        Dictionary containing notes about the endpoint, including:
-        - required_params: List of required parameters
-        - all_params: List of all available parameters
-        - hints: String containing usage hints
-        - path_params: List of path parameters
-        - query_params: List of query parameters
+        Dictionary containing notes about the endpoint
+
+    Raises:
+        Exception: If there's an error retrieving notes
     """
     try:
         logger.debug(f"Retrieving notes for endpoint: {endpoint}")
@@ -768,12 +803,14 @@ async def get_notes(endpoint: str) -> Dict[str, Any]:
 
         # Combine path and query params for all_params
         result["all_params"] = result["path_params"] + result["query_params"]
-
+        if not result["all_params"]:
+            logger.error(f"No parameters found for endpoint: {endpoint}")
+            raise Exception(f"No parameters found for endpoint: {endpoint}")
         return result
     except Exception as e:
         error_msg = f"Error retrieving notes for endpoint {endpoint}: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "endpoint": endpoint}
+        raise Exception(error_msg) from e
 
 
 async def get_game_scoring_play_data(game_id: int) -> Dict[str, Any]:
@@ -784,21 +821,23 @@ async def get_game_scoring_play_data(game_id: int) -> Dict[str, Any]:
         game_id: The MLB game ID to get scoring play data for
 
     Returns:
-        Dictionary containing scoring play data for the game, including:
-        - scoring plays
-        - inning information
-        - team scoring details
-        - any other relevant scoring information
+        Dictionary containing scoring play data for the game
+
+    Raises:
+        Exception: If there's an error retrieving scoring play data
     """
     try:
         logger.debug(f"Retrieving scoring play data for game ID: {game_id}")
         result = statsapi.game_scoring_play_data(game_id)
+        if "plays" not in result or not result["plays"]:
+            logger.error(f"No plays found for game ID: {game_id}")
+            raise Exception(f"No plays found for game ID: {game_id}")
         logger.debug(f"Retrieved scoring play data for game ID: {game_id}")
         return result
     except Exception as e:
         error_msg = f"Error retrieving scoring play data for game ID {game_id}: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "game_id": game_id}
+        raise Exception(error_msg) from e
 
 
 async def get_last_game(team_id: int) -> Dict[str, Any]:
@@ -809,11 +848,10 @@ async def get_last_game(team_id: int) -> Dict[str, Any]:
         team_id: The MLB team ID to get the last game for
 
     Returns:
-        Dictionary containing:
-        - game_id: The ID of the team's most recent game
-        - team_id: The ID of the team
-        - date: The date of the game (YYYY-MM-DD)
-        - status: The status of the game (e.g., 'Final', 'In Progress')
+        Dictionary containing game information
+
+    Raises:
+        Exception: If there's an error retrieving last game
     """
     try:
         logger.debug(f"Retrieving last game for team ID: {team_id}")
@@ -834,7 +872,7 @@ async def get_last_game(team_id: int) -> Dict[str, Any]:
     except Exception as e:
         error_msg = f"Error retrieving last game for team ID {team_id}: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "team_id": team_id}
+        raise Exception(error_msg) from e
 
 
 async def get_league_leader_data(
@@ -849,17 +887,16 @@ async def get_league_leader_data(
 
     Args:
         leader_categories: Comma-separated list of stat categories
-            (e.g., 'homeRuns,strikeouts')
         season: Season year (defaults to current season)
         limit: Number of leaders to return (defaults to all)
         stat_group: Stat group (e.g., 'hitting', 'pitching', 'fielding')
         league_id: MLB league ID to filter by
 
     Returns:
-        Dictionary containing:
-        - leaders: List of leader data for each category
-        - season: The season the data is from
-        - categories: List of categories requested
+        Dictionary containing leader data
+
+    Raises:
+        Exception: If there's an error retrieving league leader data
     """
     try:
         logger.debug(
@@ -894,7 +931,7 @@ async def get_league_leader_data(
     except Exception as e:
         error_msg = f"Error retrieving league leader data: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "params": params}
+        raise Exception(error_msg) from e
 
 
 async def get_linescore(game_id: int) -> Dict[str, Any]:
@@ -905,12 +942,10 @@ async def get_linescore(game_id: int) -> Dict[str, Any]:
         game_id: The MLB game ID to get linescore data for
 
     Returns:
-        Dictionary containing:
-        - linescore: Formatted linescore text
-        - game_id: The ID of the game
-        - teams: Dictionary with home and away team information
-        - innings: List of inning scores
-        - totals: Dictionary with total runs, hits, and errors
+        Dictionary containing linescore data
+
+    Raises:
+        Exception: If there's an error retrieving linescore
     """
     try:
         logger.debug(f"Retrieving linescore for game ID: {game_id}")
@@ -972,7 +1007,7 @@ async def get_linescore(game_id: int) -> Dict[str, Any]:
     except Exception as e:
         error_msg = f"Error retrieving linescore for game ID {game_id}: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "game_id": game_id}
+        raise Exception(error_msg) from e
 
 
 async def get_next_game(team_id: int) -> Dict[str, Any]:
@@ -983,12 +1018,10 @@ async def get_next_game(team_id: int) -> Dict[str, Any]:
         team_id: The MLB team ID to get the next game for
 
     Returns:
-        Dictionary containing:
-        - game_id: The ID of the team's next game
-        - team_id: The ID of the team
-        - date: The date of the game (YYYY-MM-DD)
-        - opponent: Dictionary with opponent team information
-        - status: The status of the game (e.g., 'Scheduled', 'In Progress')
+        Dictionary containing game information
+
+    Raises:
+        Exception: If there's an error retrieving next game
     """
     try:
         logger.debug(f"Retrieving next game for team ID: {team_id}")
@@ -1020,4 +1053,28 @@ async def get_next_game(team_id: int) -> Dict[str, Any]:
     except Exception as e:
         error_msg = f"Error retrieving next game for team ID {team_id}: {e!s}"
         logger.error(error_msg)
-        return {"error": str(e), "team_id": team_id}
+        raise Exception(error_msg) from e
+
+
+async def get_game_highlight_data(game_id: int) -> Dict[str, Any]:
+    """
+    Get highlight data for a specific MLB game.
+
+    Args:
+        game_id: The MLB game ID to get highlight data for
+
+    Returns:
+        Dictionary containing highlight data for the game
+
+    Raises:
+        Exception: If there's an error retrieving highlight data
+    """
+    try:
+        logger.debug(f"Retrieving highlight data for game ID: {game_id}")
+        highlight_data = statsapi.game_highlight_data(game_id)
+        logger.debug(f"Retrieved highlight data for game ID: {game_id}")
+        return {"data": highlight_data}
+    except Exception as e:
+        error_msg = f"Error retrieving highlight data for game ID {game_id}: {e!s}"
+        logger.error(error_msg)
+        raise Exception(error_msg) from e
