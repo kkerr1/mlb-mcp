@@ -2,10 +2,9 @@
 Tests for pybaseball tools in the baseball project.
 """
 
-import pytest
-from mcp import ClientSession
-from mcp.client.stdio import StdioServerParameters, stdio_client
 from pathlib import Path
+
+from mcp.client.stdio import StdioServerParameters
 
 
 def simplify_session_setup():

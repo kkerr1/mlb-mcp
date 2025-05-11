@@ -2,10 +2,11 @@
 Infrastructure tests for the MCP client with the baseball server.
 """
 
+from pathlib import Path
+
 import pytest
 from mcp import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
-from pathlib import Path
 
 
 def simplify_session_setup():
