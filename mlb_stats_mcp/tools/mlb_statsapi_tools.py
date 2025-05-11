@@ -153,7 +153,27 @@ async def get_standings(
         return {"error": str(e), "params_sent": kwargs}
 
 
-# Team and Player Analysis Tools
+# Team and Player Analysis
+async def get_team_roster(
+    team_id: int,
+    roster_type: str = "active",
+    season: Optional[int] = None,
+    date: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Get team roster information.
+    """
+    try:
+        logger.debug(f"Retrieving team roster for team ID: {team_id}")
+        result = statsapi.roster(team_id, roster_type, season, date)
+        logger.debug(f"Retrieved team roster data for team ID: {team_id}")
+        return result
+    except Exception as e:
+        error_msg = f"Error retrieving team roster for team ID {team_id}: {e!s}"
+        logger.error(error_msg)
+        return {"error": str(e), "team_id": team_id}
+
+
 async def get_team_leaders(
     team_id: int,
     leader_category: str = "homeRuns",
@@ -953,3 +973,51 @@ async def get_linescore(game_id: int) -> Dict[str, Any]:
         error_msg = f"Error retrieving linescore for game ID {game_id}: {e!s}"
         logger.error(error_msg)
         return {"error": str(e), "game_id": game_id}
+
+
+async def get_next_game(team_id: int) -> Dict[str, Any]:
+    """
+    Get the game ID for a team's next scheduled game.
+
+    Args:
+        team_id: The MLB team ID to get the next game for
+
+    Returns:
+        Dictionary containing:
+        - game_id: The ID of the team's next game
+        - team_id: The ID of the team
+        - date: The date of the game (YYYY-MM-DD)
+        - opponent: Dictionary with opponent team information
+        - status: The status of the game (e.g., 'Scheduled', 'In Progress')
+    """
+    try:
+        logger.debug(f"Retrieving next game for team ID: {team_id}")
+        game_id = statsapi.next_game(team_id)
+        logger.debug(f"Retrieved next game ID {game_id} for team ID: {team_id}")
+
+        # Get additional game details
+        game_data = statsapi.get("game", {"gamePk": game_id})
+
+        # Determine opponent team
+        home_team = game_data["gameData"]["teams"]["home"]
+        away_team = game_data["gameData"]["teams"]["away"]
+        opponent = home_team if home_team["id"] != team_id else away_team
+
+        result = {
+            "game_id": game_id,
+            "team_id": team_id,
+            "date": game_data["gameData"]["datetime"]["dateTime"].split("T")[0],
+            "opponent": {
+                "id": opponent["id"],
+                "name": opponent["name"],
+                "abbreviation": opponent["abbreviation"],
+            },
+            "status": game_data["gameData"]["status"]["detailedState"],
+            "is_home": home_team["id"] == team_id,
+        }
+
+        return result
+    except Exception as e:
+        error_msg = f"Error retrieving next game for team ID {team_id}: {e!s}"
+        logger.error(error_msg)
+        return {"error": str(e), "team_id": team_id}

@@ -78,6 +78,16 @@ async def get_boxscore(game_id: int, timecode: Optional[str] = None) -> Dict[str
     return await mlb_statsapi_tools.get_boxscore(game_id, timecode)
 
 
+@mcp.tool()
+async def get_team_roster(
+    team_id: int,
+    roster_type: str = "active",
+    season: Optional[int] = None,
+    date: Optional[str] = None,
+) -> Dict[str, Any]:
+    return await mlb_statsapi_tools.get_team_roster(team_id, roster_type, season, date)
+
+
 # Historical Context Tools
 @mcp.tool()
 async def get_game_pace(
@@ -127,6 +137,11 @@ async def get_league_leader_data(
 @mcp.tool()
 async def get_linescore(game_id: int) -> Dict[str, Any]:
     return await mlb_statsapi_tools.get_linescore(game_id)
+
+
+@mcp.tool()
+async def get_next_game(team_id: int) -> Dict[str, Any]:
+    return await mlb_statsapi_tools.get_next_game(team_id)
 
 
 def main():
