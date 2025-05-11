@@ -39,3 +39,4 @@ ENV/
 
 # misc
 logs/*
+CLAUDE.md
