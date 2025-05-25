@@ -19,14 +19,8 @@ A Python project that creates a Model Context Protocol (MCP) server for accessin
 - `.pre-commit-config.yaml` - Pre-commit hooks configuration
 - `.github/` - GitHub Actions workflows
 
-## Features
+## Tools
 
-- Provides MCP tools for:
-  - Game schedules and results
-  - Player statistics and lookups
-  - Team standings and leaders
-  - Boxscores and game details
-  - Historical game pace data
 
 ## Setup
 

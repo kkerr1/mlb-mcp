@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 
 from mcp.server.fastmcp import FastMCP
 
-from mlb_stats_mcp.tools import mlb_statsapi_tools
+from mlb_stats_mcp.tools import mlb_statsapi_tools, statcast_tools
 from mlb_stats_mcp.utils.logging_config import setup_logging
 
 # Initialize logging for the server
@@ -167,6 +167,104 @@ async def get_next_game(team_id: int) -> Dict[str, Any]:
 @mcp_tool_wrapper
 async def get_game_highlight_data(game_id: int) -> Dict[str, Any]:
     return await mlb_statsapi_tools.get_game_highlight_data(game_id)
+
+
+# Statcast Tools
+@mcp_tool_wrapper
+async def get_statcast_data(
+    start_dt: Optional[str] = None,
+    end_dt: Optional[str] = None,
+    team: Optional[str] = None,
+    verbose: bool = True,
+    parallel: bool = True,
+) -> Dict[str, Any]:
+    return await statcast_tools.get_statcast_data(
+        start_dt, end_dt, team, verbose, parallel
+    )
+
+
+@mcp_tool_wrapper
+async def get_statcast_batter_data(
+    player_id: int,
+    start_dt: Optional[str] = None,
+    end_dt: Optional[str] = None,
+) -> Dict[str, Any]:
+    return await statcast_tools.get_statcast_batter_data(player_id, start_dt, end_dt)
+
+
+@mcp_tool_wrapper
+async def get_statcast_pitcher_data(
+    player_id: int,
+    start_dt: Optional[str] = None,
+    end_dt: Optional[str] = None,
+) -> Dict[str, Any]:
+    return await statcast_tools.get_statcast_pitcher_data(player_id, start_dt, end_dt)
+
+
+@mcp_tool_wrapper
+async def get_statcast_batter_exitvelo_barrels(
+    year: int,
+    minBBE: Optional[int] = None,
+) -> Dict[str, Any]:
+    return await statcast_tools.get_statcast_batter_exitvelo_barrels(year, minBBE)
+
+
+@mcp_tool_wrapper
+async def get_statcast_pitcher_exitvelo_barrels(
+    year: int,
+    minBBE: Optional[int] = None,
+) -> Dict[str, Any]:
+    return await statcast_tools.get_statcast_pitcher_exitvelo_barrels(year, minBBE)
+
+
+@mcp_tool_wrapper
+async def get_statcast_batter_expected_stats(
+    year: int,
+    minPA: Optional[int] = None,
+) -> Dict[str, Any]:
+    return await statcast_tools.get_statcast_batter_expected_stats(year, minPA)
+
+
+@mcp_tool_wrapper
+async def get_statcast_pitcher_expected_stats(
+    year: int,
+    minPA: Optional[int] = None,
+) -> Dict[str, Any]:
+    return await statcast_tools.get_statcast_pitcher_expected_stats(year, minPA)
+
+
+@mcp_tool_wrapper
+async def get_statcast_batter_percentile_ranks(year: int) -> Dict[str, Any]:
+    return await statcast_tools.get_statcast_batter_percentile_ranks(year)
+
+
+@mcp_tool_wrapper
+async def get_statcast_pitcher_percentile_ranks(year: int) -> Dict[str, Any]:
+    return await statcast_tools.get_statcast_pitcher_percentile_ranks(year)
+
+
+@mcp_tool_wrapper
+async def get_statcast_batter_pitch_arsenal(
+    year: int,
+    minPA: int = 25,
+) -> Dict[str, Any]:
+    return await statcast_tools.get_statcast_batter_pitch_arsenal(year, minPA)
+
+
+@mcp_tool_wrapper
+async def get_statcast_pitcher_pitch_arsenal(
+    year: int,
+    minP: Optional[int] = None,
+    arsenal_type: str = "average_speed",
+) -> Dict[str, Any]:
+    return await statcast_tools.get_statcast_pitcher_pitch_arsenal(
+        year, minP, arsenal_type
+    )
+
+
+@mcp_tool_wrapper
+async def get_statcast_single_game(game_pk: int) -> Dict[str, Any]:
+    return await statcast_tools.get_statcast_single_game(game_pk)
 
 
 def main():
