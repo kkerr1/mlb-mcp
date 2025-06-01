@@ -7,7 +7,12 @@ from typing import Any, Dict, Optional
 
 from mcp.server.fastmcp import FastMCP
 
-from mlb_stats_mcp.tools import mlb_statsapi_tools, statcast_tools
+from mlb_stats_mcp.tools import (
+    mlb_statsapi_tools,
+    pybaseball_plotting_tools,
+    pybaseball_supp_tools,
+    statcast_tools,
+)
 from mlb_stats_mcp.utils.logging_config import setup_logging
 
 # Initialize logging for the server
@@ -265,6 +270,165 @@ async def get_statcast_pitcher_pitch_arsenal(
 @mcp_tool_wrapper
 async def get_statcast_single_game(game_pk: int) -> Dict[str, Any]:
     return await statcast_tools.get_statcast_single_game(game_pk)
+
+
+@mcp_tool_wrapper
+async def create_strike_zone_plot(
+    data: Dict[str, Any],
+    title: str = "",
+    colorby: str = "pitch_type",
+    legend_title: str = "",
+    annotation: str = "pitch_type",
+) -> Dict[str, Any]:
+    return await pybaseball_plotting_tools.create_strike_zone_plot(
+        data, title, colorby, legend_title, annotation
+    )
+
+
+@mcp_tool_wrapper
+async def create_spraychart_plot(
+    data: Dict[str, Any],
+    team_stadium: str = "generic",
+    title: str = "",
+    colorby: str = "events",
+    legend_title: str = "",
+    size: int = 100,
+    width: int = 500,
+    height: int = 500,
+) -> Dict[str, Any]:
+    return await pybaseball_plotting_tools.create_spraychart_plot(
+        data, team_stadium, title, colorby, legend_title, size, width, height
+    )
+
+
+@mcp_tool_wrapper
+async def create_bb_profile_plot(
+    data: Dict[str, Any],
+    parameter: str = "launch_angle",
+) -> Dict[str, Any]:
+    return await pybaseball_plotting_tools.create_bb_profile_plot(data, parameter)
+
+
+@mcp_tool_wrapper
+async def create_teams_plot(
+    data: Dict[str, Any],
+    x_axis: str,
+    y_axis: str,
+    title: Optional[str] = None,
+) -> Dict[str, Any]:
+    return await pybaseball_plotting_tools.create_teams_plot(
+        data, x_axis, y_axis, title
+    )
+
+
+# Supplemental pybaseball tools
+@mcp_tool_wrapper
+async def get_pitching_stats_bref(season: Optional[int] = None) -> Dict[str, Any]:
+    return await pybaseball_supp_tools.get_pitching_stats_bref(season)
+
+
+@mcp_tool_wrapper
+async def get_pitching_stats_range(
+    start_dt: str,
+    end_dt: Optional[str] = None,
+) -> Dict[str, Any]:
+    return await pybaseball_supp_tools.get_pitching_stats_range(start_dt, end_dt)
+
+
+@mcp_tool_wrapper
+async def get_pitching_stats(
+    start_season: int,
+    end_season: Optional[int] = None,
+    league: str = "all",
+    qual: Optional[int] = None,
+    ind: int = 1,
+) -> Dict[str, Any]:
+    return await pybaseball_supp_tools.get_pitching_stats(
+        start_season, end_season, league, qual, ind
+    )
+
+
+@mcp_tool_wrapper
+async def get_playerid_lookup(
+    last: str,
+    first: Optional[str] = None,
+    fuzzy: bool = False,
+) -> Dict[str, Any]:
+    return await pybaseball_supp_tools.get_playerid_lookup(last, first, fuzzy)
+
+
+@mcp_tool_wrapper
+async def reverse_lookup_player(
+    player_ids: list[int],
+    key_type: str = "mlbam",
+) -> Dict[str, Any]:
+    return await pybaseball_supp_tools.reverse_lookup_player(player_ids, key_type)
+
+
+@mcp_tool_wrapper
+async def get_schedule_and_record(season: int, team: str) -> Dict[str, Any]:
+    return await pybaseball_supp_tools.get_schedule_and_record(season, team)
+
+
+@mcp_tool_wrapper
+async def get_player_splits(
+    playerid: str,
+    year: Optional[int] = None,
+    player_info: bool = False,
+    pitching_splits: bool = False,
+) -> Dict[str, Any]:
+    return await pybaseball_supp_tools.get_player_splits(
+        playerid, year, player_info, pitching_splits
+    )
+
+
+@mcp_tool_wrapper
+async def get_pybaseball_standings(season: Optional[int] = None) -> Dict[str, Any]:
+    return await pybaseball_supp_tools.get_standings(season)
+
+
+@mcp_tool_wrapper
+async def get_team_batting(
+    start_season: int,
+    end_season: Optional[int] = None,
+    league: str = "all",
+    ind: int = 1,
+) -> Dict[str, Any]:
+    return await pybaseball_supp_tools.get_team_batting(
+        start_season, end_season, league, ind
+    )
+
+
+@mcp_tool_wrapper
+async def get_team_fielding(
+    start_season: int,
+    end_season: Optional[int] = None,
+    league: str = "all",
+    ind: int = 1,
+) -> Dict[str, Any]:
+    return await pybaseball_supp_tools.get_team_fielding(
+        start_season, end_season, league, ind
+    )
+
+
+@mcp_tool_wrapper
+async def get_team_pitching(
+    start_season: int,
+    end_season: Optional[int] = None,
+    league: str = "all",
+    ind: int = 1,
+) -> Dict[str, Any]:
+    return await pybaseball_supp_tools.get_team_pitching(
+        start_season, end_season, league, ind
+    )
+
+
+@mcp_tool_wrapper
+async def get_top_prospects(
+    team: Optional[str] = None,
+    player_type: Optional[str] = None,
+) -> Dict[str, Any]:
+    return await pybaseball_supp_tools.get_top_prospects(team, player_type)
 
 
 def main():

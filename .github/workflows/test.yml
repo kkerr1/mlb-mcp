@@ -26,3 +26,5 @@ jobs:
       - name: Run tests
         run: |
           pytest
+        env:
+          SHOW_IMAGE: false

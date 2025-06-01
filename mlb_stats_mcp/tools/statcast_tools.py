@@ -1,6 +1,5 @@
 """
-Statcast tool implementations for the baseball project.
-Contains the core functionality for interacting with pybaseball's Statcast data.
+Statcast tool implementations for pybaseball statcast functions
 """
 
 import datetime
