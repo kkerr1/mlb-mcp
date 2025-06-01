@@ -17,7 +17,7 @@ from mlb_stats_mcp.utils.logging_config import setup_logging
 env_path = Path(__file__).parent.parent.parent / ".env"
 load_dotenv(env_path)
 
-logger = setup_logging("test_suite")
+logger = setup_logging("[TEST] pybaseball")
 
 logger.debug(f"SHOW_IMAGE SET TO {os.environ.get('SHOW_IMAGE')}")
 

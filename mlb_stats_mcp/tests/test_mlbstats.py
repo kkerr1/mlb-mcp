@@ -9,6 +9,10 @@ import pytest
 from mcp import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 
+from mlb_stats_mcp.utils.logging_config import setup_logging
+
+logger = setup_logging("[TEST] mlbstatsapi")
+
 
 def simplify_session_setup():
     """Helper to create server params for tests."""
@@ -26,7 +30,15 @@ async def test_get_schedule_tool():
             await session.initialize()
 
             # Test with valid parameters
-            result = await session.call_tool("get_schedule", {"date": "2023-07-14"})
+            result = await session.call_tool(
+                "get_schedule",
+                {
+                    "start_date": "07/01/2018",
+                    "end_date": "07/31/2018",
+                    "team_id": 143,
+                    "opponent_id": 121,
+                },
+            )
 
             # Verify successful response
             assert not result.isError, "Expected successful response"
@@ -34,8 +46,58 @@ async def test_get_schedule_tool():
             assert result.content[0].type == "text", "Expected text response"
 
             # Verify response structure
-            data = json.loads(result.content[0].text)
-            assert "game_date" in data, "Missing 'game_date' in response"
+            data = json.loads(result.content[0].text)["games"]
+            logger.debug(data)
+            # Verify we got all 4 games
+            assert len(data) == 4, f"Expected 4 games, got {len(data)}"
+
+            # Verify all games are between the correct teams
+            for game in data:
+                assert (
+                    game["away_id"] == 143 or game["home_id"] == 143
+                ), "Phillies (143) should be in every game"
+                assert (
+                    game["away_id"] == 121 or game["home_id"] == 121
+                ), "Mets (121) should be in every game"
+
+            # Verify game dates are within the requested range
+            game_dates = [game["game_date"] for game in data]
+            assert all(
+                "2018-07" in date for date in game_dates
+            ), "All games should be in July 2018"
+
+            # Verify required fields exist in each game
+            required_fields = [
+                "game_id",
+                "game_date",
+                "away_name",
+                "home_name",
+                "status",
+            ]
+            for game in data:
+                for field in required_fields:
+                    assert (
+                        field in game
+                    ), f"Missing '{field}' in game {game.get('game_id')}"
+
+            # Verify specific games from the logs
+            game_ids = [game["game_id"] for game in data]
+            expected_game_ids = [530769, 529466, 530781, 530796]
+            assert set(game_ids) == set(
+                expected_game_ids
+            ), f"Expected game IDs {expected_game_ids}, got {game_ids}"
+
+            # Verify the doubleheader games
+            doubleheader_games = [game for game in data if game["doubleheader"] == "Y"]
+            assert len(doubleheader_games) == 2, "Should have 2 doubleheader games"
+            assert all(
+                game["game_date"] == "2018-07-09" for game in doubleheader_games
+            ), "Doubleheader games should be on 2018-07-09"
+
+            # Verify all games have final status
+            assert all(
+                game["status"] == "Final" for game in data
+            ), "All games should have 'Final' status"
 
             # Test with invalid date
             result = await session.call_tool("get_schedule", {"date": "invalid_date"})

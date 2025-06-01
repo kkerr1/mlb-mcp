@@ -43,40 +43,41 @@ async def get_stats(endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
 
 async def get_schedule(
     date: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     team_id: Optional[int] = None,
+    opponent_id: Optional[int] = None,
     sport_id: int = 1,
-    game_type: Optional[str] = None,
+    game_id: Optional[str] = None,
+    season: Optional[str] = None,
+    include_series_status: bool = True,
 ) -> Dict[str, Any]:
     """
-    Get game schedule information.
-
-    Args:
-        date: Date in YYYY-MM-DD format (defaults to today)
-        team_id: MLB team ID to filter by
-        sport_id: Sport ID (1 for MLB)
-        game_type: Game type (R=Regular Season, F=Spring Training, etc.)
-
-    Returns:
-        Schedule data from the MLB Stats API
-
-    Raises:
-        Exception: If there's an error retrieving the schedule
+    Game schedule information
     """
     try:
         kwargs = {}
-        if date is not None:
+        if date:
             kwargs["date"] = date
-        if team_id is not None:
+        if start_date:
+            kwargs["start_date"] = start_date
+        if end_date:
+            kwargs["end_date"] = end_date
+        if team_id:
             kwargs["team"] = team_id
-        if sport_id != 1:
-            kwargs["sportId"] = sport_id
-        if game_type is not None:
-            kwargs["gameType"] = game_type
+        if opponent_id:
+            kwargs["opponent"] = opponent_id
+        if game_id:
+            kwargs["game_id"] = game_id
+        if season:
+            kwargs["season"] = season
+        kwargs["sportId"] = sport_id
+        kwargs["include_series_status"] = include_series_status
 
         logger.debug(f"Retrieving schedule with params: {kwargs}")
         result = statsapi.schedule(**kwargs)
         logger.debug(f"Retrieved schedule data: {len(result)} game(s)")
-        return result
+        return {"games": result}
     except Exception as e:
         error_msg = f"Error retrieving schedule: {e!s}"
         logger.error(error_msg)
