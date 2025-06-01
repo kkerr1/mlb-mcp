@@ -4,7 +4,9 @@ Image support for tests
 
 import base64
 import io
+
 from PIL import Image
+
 from .logging_config import setup_logging
 
 logger = setup_logging("images")

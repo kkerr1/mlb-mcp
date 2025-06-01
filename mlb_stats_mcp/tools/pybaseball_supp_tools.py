@@ -137,7 +137,8 @@ async def get_pitching_stats(
 
     Args:
         start_season: First season to retrieve data from
-        end_season: Final season to retrieve data from. If None, returns only start_season.
+        end_season: Final season to retrieve data from.
+        If None, returns only start_season.
         league: Either "all", "nl", "al", or "mnl"
         qual: Minimum number of plate appearances to be included
         ind: 1 for individual season level, 0 for aggregate data
@@ -164,7 +165,8 @@ async def get_pitching_stats(
             )
         except Exception as e:
             logger.error(
-                f"[BREAKPOINT] error: {e} with args: ({start_season}, {end_season or start_season}, {league}, {qual}, {ind})"
+                f"[BREAKPOINT] error: {e} with args: "
+                f"({start_season}, {end_season}, {league}, {qual}, {ind})"
             )
 
         if len(df) == 0:
@@ -377,7 +379,8 @@ async def get_team_batting(
 
     Args:
         start_season: First season for team batting data
-        end_season: Last season for team batting data. If None, returns only start_season.
+        end_season: Last season for team batting data.
+        If None, returns only start_season.
         league: Either "all", "nl", "al", or "mnl"
         ind: 1 for individual season level, 0 for aggregate data
 
@@ -418,7 +421,8 @@ async def get_team_fielding(
 
     Args:
         start_season: First season for team fielding data
-        end_season: Last season for team fielding data. If None, returns only start_season.
+        end_season: Last season for team fielding data.
+        If None, returns only start_season.
         league: Either "all", "nl", "al", or "mnl"
         ind: 1 for individual season level, 0 for aggregate data
 
@@ -459,7 +463,8 @@ async def get_team_pitching(
 
     Args:
         start_season: First season for team pitching data
-        end_season: Last season for team pitching data. If None, returns only start_season.
+        end_season: Last season for team pitching data.
+        If None, returns only start_season.
         league: Either "all", "nl", "al", or "mnl"
         ind: 1 for individual season level, 0 for aggregate data
 
