@@ -53,7 +53,48 @@ async def get_schedule(
     include_series_status: bool = True,
 ) -> Dict[str, Any]:
     """
-    Game schedule information
+    Get MLB game schedule information for specified criteria.
+
+    Use this tool to find games by date range, specific teams, or individual games.
+    You can search by a single date, date range, specific teams, or combinations.
+
+    Args:
+        date: Specific date in format 'MM/DD/YYYY' or 'YYYY-MM-DD'
+        start_date: Start of date range in format 'MM/DD/YYYY' or 'YYYY-MM-DD'
+        end_date: End of date range in format 'MM/DD/YYYY' or 'YYYY-MM-DD'
+        team_id: MLB team ID (e.g., 143 for Phillies, 121 for Mets)
+        opponent_id: Opponent team ID to find head-to-head matchups
+        sport_id: Sport ID (1 for MLB, default)
+        game_id: Specific game ID to get details for one game
+        season: Season year (e.g., '2023')
+        include_series_status: Whether to include series status info
+
+    Returns:
+        Dictionary with "games" key containing list of game dictionaries.
+        Each game contains comprehensive info including:
+        - Basic info: game_id, game_date, game_datetime, status
+        - Teams: away_name, home_name, away_id, home_id
+        - Scores: away_score, home_score, winning/losing teams
+        - Pitchers: probable starters, winning/losing/save pitchers with notes
+        - Venue: venue_id, venue_name
+        - Broadcast: national_broadcasts list
+        - Game context: doubleheader status, game_num, series_status
+        - Live game info: current_inning, inning_state
+        - Summary: formatted game summary string
+
+    Examples:
+        - Get today's games: get_schedule(date="06/01/2025")
+        - Get team's games in date range:
+            get_schedule(start_date="07/01/2018", end_date="07/31/2018", team_id=143)
+        - Get head-to-head series:
+            get_schedule(
+                start_date="07/01/2018",
+                end_date="07/31/2018",
+                team_id=143,
+                opponent_id=121
+            )
+        - Get specific game: get_schedule(game_id="530769")
+        - Get full season: get_schedule(season="2023", team_id=143)
     """
     try:
         kwargs = {}
@@ -97,7 +138,10 @@ async def get_player_stats(
         player_id: MLB player ID
         group: Stat group (hitting, pitching, fielding)
         season: Season year (defaults to current season)
-        stats: Stat type (season, gameLog, etc.)
+        stats: Stat type (For type use career or season or yearByYear.
+        Include multiple types in the following format
+        (this is a string, not actually a list):
+        group='[career,season,yearByYear]')
 
     Returns:
         Player statistics from the MLB Stats API
