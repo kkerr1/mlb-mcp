@@ -91,8 +91,15 @@ async def get_schedule(
 
     Examples:
         - Get today's games: get_schedule(date="06/01/2025")
-        - Get team's games in date range: get_schedule(start_date="07/01/2018", end_date="07/31/2018", team_id=143)
-        - Get head-to-head series: get_schedule(start_date="07/01/2018", end_date="07/31/2018", team_id=143, opponent_id=121)
+        - Get team's games in date range:
+            get_schedule(start_date="07/01/2018", end_date="07/31/2018", team_id=143)
+        - Get head-to-head series:
+            get_schedule(
+                start_date="07/01/2018",
+                end_date="07/31/2018",
+                team_id=143,
+                opponent_id=121
+            )
         - Get specific game: get_schedule(game_id="530769")
         - Get full season: get_schedule(season="2023", team_id=143)
     """
