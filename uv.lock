@@ -794,7 +794,7 @@ requires-dist = [
     { name = "mlb-statsapi" },
     { name = "pre-commit", specifier = ">=4.2.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.5.0" },
-    { name = "pybaseball", git = "https://github.com/jldbc/pybaseball.git" },
+    { name = "pybaseball", specifier = ">=2.2.7" },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pytest-asyncio", specifier = ">=0.26.0" },
@@ -1114,7 +1114,7 @@ wheels = [
 [[package]]
 name = "pybaseball"
 version = "2.2.7"
-source = { git = "https://github.com/jldbc/pybaseball.git#aa093f9d52054b8b7ec5988deb2a8dbb7fcb0f89" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "beautifulsoup4" },
@@ -1127,6 +1127,10 @@ dependencies = [
     { name = "requests" },
     { name = "scipy" },
     { name = "tqdm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/62/00/4009bc63970a8277ecd2b3fece4070bf31f1acf52150879df8384e1d7c5a/pybaseball-2.2.7.tar.gz", hash = "sha256:ff6d1b923cf5d5aa8ad023ccf2b4b2ef467b7fdda2244a4f559f2122a777d2fc", size = 402337 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bb/66/5ef47f5830570a30afbdfbd741cdf3e5a1a31c4c588514ab69bc074e8704/pybaseball-2.2.7-py3-none-any.whl", hash = "sha256:0f76895147ed7c8bfa5374e248c5b6553eaeed9022f32c30271c732932e44a82", size = 426137 },
 ]
 
 [[package]]

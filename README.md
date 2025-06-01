@@ -3,7 +3,7 @@
 [![Tests](https://github.com/etweisberg/mcp-baseball-stats/actions/workflows/test.yml/badge.svg)](https://github.com/etweisberg/baseball/mcp-baseball-stats/workflows/test.yml)
 [![Pre-commit](https://github.com/etweisberg/mcp-baseball-stats/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/etweisberg/mcp-baseball-stats/actions/workflows/pre-commit.yml)
 
-A Python project that creates a Model Context Protocol (MCP) server for accessing MLB statistics data through the MLB StatsAPI. This server provides structured API access to baseball statistics that can be used with MCP-compatible clients.
+A Python project that creates a Model Context Protocol (MCP) server for accessing MLB statistics data through the MLB Stats API and `pybaseball` library for statcast, fangraphs, and baseball reference statistics. This server provides structured API access to baseball statistics that can be used with MCP-compatible clients.
 
 ## Project Structure
 
@@ -12,15 +12,17 @@ A Python project that creates a Model Context Protocol (MCP) server for accessin
   - `tools/` - MCP tool implementations
     - `mlb_statsapi_tools.py` - MLB StatsAPI tool definitions
     - `statcast_tools.py` - Statcast data tool definitions
+    - `pybaseball_plotting_tools.py` - Additional `pybaseball` tools provided for generating matplotlib plots and returning base64 encoded images
+    - `pybaseball_supp_tools.py` - Supplemental `pybaseball` functions for interfacing with fangraphs, baseball reference, and other data sources
   - `utils/` - Utility modules
     - `logging_config.py` - Logging configuration
+    - `images.py` - functions related to handling plot images
   - `tests/` - Test suite for verifying server functionality
 - `pyproject.toml` - Project configuration and dependencies
 - `.pre-commit-config.yaml` - Pre-commit hooks configuration
 - `.github/` - GitHub Actions workflows
 
 ## Tools
-
 
 ## Setup
 
@@ -91,6 +93,7 @@ To connect this MCP server to Claude Desktop, add a configuration to your `claud
 ```
 
 Replace the following placeholders:
+
 - `{PATH_TO_UV}`: Path to your uv installation (e.g., `~/.local/bin/uv`)
 - `{PROJECT_DIRECTORY}`: Path to your project directory
 - `{LOG_FILE_PATH}`: Path where you want to store the log file

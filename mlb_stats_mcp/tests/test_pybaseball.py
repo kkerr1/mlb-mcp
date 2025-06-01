@@ -755,7 +755,7 @@ async def test_get_schedule_and_record():
             # Test with valid parameters
             result = await session.call_tool(
                 "get_schedule_and_record",
-                {"season": 2023, "team": "LAA"},
+                {"season": 2023, "team": "LAD"},
             )
 
             # Verify successful response
