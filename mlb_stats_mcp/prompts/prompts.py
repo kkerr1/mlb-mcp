@@ -66,7 +66,7 @@ For BATTERS - Create these plots using the statcast data:
     } Strike Zone Profile", colorby="events")
 2. create_spraychart_plot(statcast_data, title="{player_name} Spray Chart", colorby="events")
 3. create_bb_profile_plot(statcast_data, parameter="launch_angle")
-4. **create_bb_profile_plot(statcast_data, parameter="exit_velocity") - 
+4. **create_bb_profile_plot(statcast_data, parameter="exit_velocity") -
     NEW: Exit velocity distribution**
 
 For PITCHERS - Create these plots using the statcast data:
@@ -74,7 +74,7 @@ For PITCHERS - Create these plots using the statcast data:
         player_name
     } Pitch Locations", colorby="pitch_type")
 2. create_bb_profile_plot(statcast_data, parameter="release_speed")
-3. **create_bb_profile_plot(statcast_data, parameter="exit_velocity") - 
+3. **create_bb_profile_plot(statcast_data, parameter="exit_velocity") -
     NEW: Exit velocity allowed distribution**
 
 STEP 5: GET CONTEXTUAL DATA
@@ -92,56 +92,56 @@ Generate a comprehensive HTML report with the following structure:
     <title>{player_name} Performance Report</title>
     <style>
         body {{ font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }}
-        .container {{ 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            background-color: white; 
-            padding: 20px; 
-            border-radius: 10px; 
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
         }}
-        .header {{ 
-            text-align: center; 
-            border-bottom: 3px solid #003366; 
-            padding-bottom: 20px; 
-            margin-bottom: 30px; 
+        .header {{
+            text-align: center;
+            border-bottom: 3px solid #003366;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
         }}
         .section {{ margin-bottom: 30px; }}
-        .stats-grid {{ 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-            gap: 15px; 
-            margin: 20px 0; 
+        .stats-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
             }}
-        .stat-card {{ 
-            background-color: #f8f9fa; 
-            padding: 15px; 
-            border-radius: 8px; 
-            text-align: center; 
+        .stat-card {{
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
             }}
         .stat-value {{ font-size: 24px; font-weight: bold; color: #003366; }}
         .stat-label {{ font-size: 12px; color: #666; margin-top: 5px; }}
-        .exitvelo-highlight {{ 
-            background-color: #fff3cd; 
-            border: 2px solid #ffc107; 
+        .exitvelo-highlight {{
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
             }}
-        .barrel-highlight {{ 
-            background-color: #d1ecf1; 
-            border: 2px solid #17a2b8; 
+        .barrel-highlight {{
+            background-color: #d1ecf1;
+            border: 2px solid #17a2b8;
             }}
         .plot-container {{ text-align: center; margin: 20px 0; }}
-        .plot-container img {{ 
-            max-width: 100%; 
-            height: auto; 
+        .plot-container img {{
+            max-width: 100%;
+            height: auto;
             border: 1px solid #ddd;
-            border-radius: 8px; 
+            border-radius: 8px;
             }}
         .highlights {{ background-color: #e7f3ff; padding: 15px; border-radius: 8px; }}
         .analysis {{ background-color: #fff3e0; padding: 15px; border-radius: 8px; }}
-        .exitvelo-section {{ 
-            background-color: #f8f9fa; 
-            padding: 20px; 
-            border-radius: 8px; 
-            border-left: 4px solid #ffc107; 
+        .exitvelo-section {{
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
         }}
     </style>
 </head>
@@ -151,12 +151,12 @@ Generate a comprehensive HTML report with the following structure:
             <h1>{player_name} Performance Report</h1>
             <h3>{season_text}</h3>
         </div>
-        
+
         <div class="section">
             <h2>Player Overview</h2>
             <!-- Include basic player info, team, position, etc. -->
         </div>
-        
+
         <div class="section">
             <h2>Key Statistics</h2>
             <div class="stats-grid">
@@ -185,7 +185,7 @@ Generate a comprehensive HTML report with the following structure:
                 <!-- Repeat for other key stats -->
             </div>
         </div>
-        
+
         <div class="section exitvelo-section">
             <h2>Exit Velocity & Batted Ball Analysis</h2>
             <div class="stats-grid">
@@ -207,10 +207,10 @@ Generate a comprehensive HTML report with the following structure:
                     <div class="stat-label">Solid Contact Rate</div>
                 </div>
             </div>
-            <p><strong>Analysis:</strong> Compare these exit velocity metrics to league averages and 
+            <p><strong>Analysis:</strong> Compare these exit velocity metrics to league averages and
             explain what they indicate about the player's contact quality and power potential.</p>
         </div>
-        
+
         <div class="section">
             <h2>Performance Visualizations</h2>
             <!-- Include all generated plots as base64 images -->
@@ -222,18 +222,18 @@ Generate a comprehensive HTML report with the following structure:
             <!-- REQUIRED: Include exit velocity distribution plot -->
             <div class="plot-container">
                 <h3>{player_name} Exit Velocity Distribution</h3>
-                <img 
-                    src="data:image/png;base64,[EXIT_VELO_PLOT_BASE64]" 
+                <img
+                    src="data:image/png;base64,[EXIT_VELO_PLOT_BASE64]"
                     alt="Exit Velocity Distribution"
                 >
                 <p>
-                    This chart shows the distribution of exit velocities for all batted balls, 
+                    This chart shows the distribution of exit velocities for all batted balls,
                     highlighting the player's ability to make hard contact consistently.
                 </p>
             </div>
             <!-- Repeat for each visualization -->
         </div>
-        
+
         <div class="section highlights">
             <h2>Season Highlights</h2>
             <!-- Include notable achievements, career highs, exit velocity milestones, etc. -->
@@ -244,12 +244,12 @@ Generate a comprehensive HTML report with the following structure:
                 <li>Ranking in league average exit velocity: [RANKING]</li>
             </ul>
         </div>
-        
+
         <div class="section analysis">
             <h2>Performance Analysis</h2>
             <!-- Include detailed analysis focusing heavily on exit velocity insights -->
             <h3>Contact Quality Assessment</h3>
-            <p><strong>Exit Velocity Analysis:</strong> Analyze the player's exit velocity data in 
+            <p><strong>Exit Velocity Analysis:</strong> Analyze the player's exit velocity data in
             context of:</p>
             <ul>
                 <li>League average comparisons (avg EV, hard hit rate, barrel rate)</li>
@@ -259,10 +259,10 @@ Generate a comprehensive HTML report with the following structure:
                 <li>Trends in exit velocity throughout the season</li>
             </ul>
         </div>
-        
+
         <div class="section">
             <h2>League Context</h2>
-            <!-- Compare player to league averages and leaders, emphasizing exit velocity rankings 
+            <!-- Compare player to league averages and leaders, emphasizing exit velocity rankings
                 -->
             <h3>Exit Velocity League Rankings</h3>
             <p>Show where the player ranks among qualified hitters in:</p>
@@ -280,13 +280,13 @@ Generate a comprehensive HTML report with the following structure:
 
 IMPORTANT NOTES FOR BASE64 IMAGES:
 - All plot functions return a dictionary with a 'base64' key containing the image data
-- Use this format in HTML: 
+- Use this format in HTML:
     <img src="data:image/png;base64,{{plot_result['base64']}}" alt="Plot Description">
 - Include descriptive alt text for each image
 - Add brief explanations under each plot about what insights it provides
 
 **EXIT VELOCITY ANALYSIS GUIDELINES:**
-- **ALWAYS** retrieve and analyze exit velocity data using get_statcast_batter_exitvelo_barrels() or 
+- **ALWAYS** retrieve and analyze exit velocity data using get_statcast_batter_exitvelo_barrels() or
     get_statcast_pitcher_exitvelo_barrels()
 - Compare the player's exit velocity metrics to league averages:
   - Average Exit Velocity (league avg ~89 mph)
@@ -297,14 +297,14 @@ IMPORTANT NOTES FOR BASE64 IMAGES:
   - avg_hit_speed: Overall exit velocity average
   - max_hit_speed: Hardest contact made
   - ev50: 50th percentile exit velocity
-  - ev95: 95th percentile exit velocity  
+  - ev95: 95th percentile exit velocity
   - barrel_batted_rate: Percentage of batted balls that are "barrels"
   - solidcontact_percent: Rate of solid contact
   - flareburner_percent: Rate of weak contact
   - sweetspot_percent: Launch angle between 8-32 degrees
 
 ANALYSIS GUIDELINES:
-- **Prioritize exit velocity analysis** 
+- **Prioritize exit velocity analysis**
     - this is now the primary focus for contact quality assessment
 - Compare current season performance to career averages where possible
 - Identify strengths and areas for improvement based on exit velocity data
@@ -314,7 +314,7 @@ ANALYSIS GUIDELINES:
 - For pitchers: Focus on limiting hard contact, command, stuff quality
 - **Always include exit velocity in the "strengths" or "areas for improvement" sections**
 
-Generate a complete HTML report that baseball analysts and fans would find 
+Generate a complete HTML report that baseball analysts and fans would find
 comprehensive and insightful, with special emphasis on exit velocity analysis."""
 
 
@@ -345,7 +345,7 @@ If "hitting" or "overall":
 - get_team_batting(current_season) for both teams
 - get_team_leaders() for key offensive categories (homeRuns, rbi, battingAverage, onBasePercentage)
 
-If "pitching" or "overall":  
+If "pitching" or "overall":
 - get_team_pitching(current_season) for both teams
 - get_team_leaders() for key pitching categories (earnedRunAverage, wins, strikeouts, saves)
 
@@ -354,7 +354,7 @@ If "recent":
 - Focus on recent performance trends
 
 STEP 3: ADVANCED METRICS
-- Get league-wide data using get_statcast_batter_expected_stats() and 
+- Get league-wide data using get_statcast_batter_expected_stats() and
 get_statcast_pitcher_expected_stats()
 - Compare team averages to league benchmarks
 
@@ -435,13 +435,13 @@ def statistical_deep_dive(
     """
     season_text = f"{season}" if season else "current season"
 
-    return f"""Create a comprehensive statistical deep dive analysis for {stat_category} 
+    return f"""Create a comprehensive statistical deep dive analysis for {stat_category}
 in the {season_text}.
 
 STEP 1: GATHER LEAGUE-WIDE DATA
 1. get_league_leader_data("{stat_category}", season={season or "current"}, limit=50)
 2. Get appropriate team-level data using get_team_batting() or get_team_pitching()
-3. Use get_statcast_batter_expected_stats() or get_statcast_pitcher_expected_stats() for advanced 
+3. Use get_statcast_batter_expected_stats() or get_statcast_pitcher_expected_stats() for advanced
 context
 
 STEP 2: IDENTIFY KEY INSIGHTS
