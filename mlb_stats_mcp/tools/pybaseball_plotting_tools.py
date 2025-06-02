@@ -160,9 +160,7 @@ async def create_spraychart_plot(
         # Save plot to base64
         plot_image = _axes_to_base64(ax)
 
-        logger.debug(
-            f"Created spraychart with {len(hit_data)} hits for {team_stadium} stadium"
-        )
+        logger.debug(f"Created spraychart with {len(hit_data)} hits for {team_stadium} stadium")
 
         return {
             "plot_type": "spraychart",
@@ -242,9 +240,7 @@ async def create_bb_profile_plot(
             "parameter": parameter,
             "metadata": {
                 "bb_types": (
-                    df["bb_type"].value_counts().to_dict()
-                    if "bb_type" in df.columns
-                    else {}
+                    df["bb_type"].value_counts().to_dict() if "bb_type" in df.columns else {}
                 )
             },
         }

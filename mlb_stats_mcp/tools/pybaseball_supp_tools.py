@@ -69,18 +69,14 @@ async def get_pitching_stats_bref(season: Optional[int] = None) -> Dict[str, Any
         Exception: If there's an error retrieving pitching stats
     """
     try:
-        logger.debug(
-            f"Retrieving Baseball Reference pitching stats for season: {season}"
-        )
+        logger.debug(f"Retrieving Baseball Reference pitching stats for season: {season}")
 
         df = pitching_stats_bref(season)
 
         if len(df) == 0:
             raise Exception("No pitching stats data found")
 
-        logger.debug(
-            f"Retrieved {len(df)} pitching stats records from Baseball Reference"
-        )
+        logger.debug(f"Retrieved {len(df)} pitching stats records from Baseball Reference")
 
         return _convert_dataframe_to_dict(df)
     except Exception as e:
@@ -107,9 +103,7 @@ async def get_pitching_stats_range(
         Exception: If there's an error retrieving pitching stats
     """
     try:
-        logger.debug(
-            f"Retrieving pitching stats range from {start_dt} to {end_dt or start_dt}"
-        )
+        logger.debug(f"Retrieving pitching stats range from {start_dt} to {end_dt or start_dt}")
 
         df = pitching_stats_range(start_dt, end_dt)
 
@@ -236,9 +230,7 @@ async def reverse_lookup_player(
         Exception: If there's an error in reverse lookup
     """
     try:
-        logger.debug(
-            f"Reverse looking up {len(player_ids)} players with key_type: {key_type}"
-        )
+        logger.debug(f"Reverse looking up {len(player_ids)} players with key_type: {key_type}")
 
         df = playerid_reverse_lookup(player_ids, key_type)
 

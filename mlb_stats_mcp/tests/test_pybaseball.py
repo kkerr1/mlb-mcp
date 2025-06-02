@@ -251,9 +251,7 @@ async def test_get_statcast_batter_percentile_ranks():
             await session.initialize()
 
             # Test with valid parameters
-            result = await session.call_tool(
-                "get_statcast_batter_percentile_ranks", {"year": 2023}
-            )
+            result = await session.call_tool("get_statcast_batter_percentile_ranks", {"year": 2023})
 
             # Verify successful response
             assert not result.isError, "Expected successful response"
@@ -387,9 +385,7 @@ async def test_get_statcast_single_game():
             assert "columns" in data, "Response should contain 'columns' key"
 
             # Test with invalid game ID
-            result = await session.call_tool(
-                "get_statcast_single_game", {"game_pk": 999999999}
-            )
+            result = await session.call_tool("get_statcast_single_game", {"game_pk": 999999999})
             assert result.isError, "Expected error response for invalid game ID"
 
 
@@ -498,9 +494,7 @@ async def test_image_create_spraychart_plot_votto_aquino():
 
                 assert len(combined_data["data"]) > 0
             except Exception as e:
-                raise Exception(
-                    f"Exception occurred in pre-req batter data: {e}"
-                ) from e
+                raise Exception(f"Exception occurred in pre-req batter data: {e}") from e
 
             # Create spraychart
             try:
@@ -565,9 +559,7 @@ async def test_image_create_bb_profile_plot():
                 assert "data" in statcast_data
                 assert len(statcast_data["data"]) > 0
             except Exception as e:
-                raise Exception(
-                    f"Exception occurred in pre-req statcast data: {e}"
-                ) from e
+                raise Exception(f"Exception occurred in pre-req statcast data: {e}") from e
 
             # Create bb_profile plot
             try:
@@ -644,12 +636,8 @@ async def test_image_plot_teams():
             plot_data = json.loads(plot_result.content[0].text)
             assert "plot_type" in plot_data, "Response should contain 'plot_type' key"
             assert plot_data["plot_type"] == "teams"
-            assert (
-                "image_base64" in plot_data
-            ), "Response should contain 'image_base64' key"
-            assert (
-                len(plot_data["image_base64"]) > 100
-            ), "Image data should be substantial"
+            assert "image_base64" in plot_data, "Response should contain 'image_base64' key"
+            assert len(plot_data["image_base64"]) > 100, "Image data should be substantial"
             assert "team_count" in plot_data, "Response should contain 'team_count' key"
             assert plot_data["team_count"] > 0, "Should have team data"
             assert "x_axis" in plot_data, "Response should contain 'x_axis' key"
@@ -672,9 +660,7 @@ async def test_get_pitching_stats_bref():
             await session.initialize()
 
             # Test with valid parameters
-            result = await session.call_tool(
-                "get_pitching_stats_bref", {"season": 2023}
-            )
+            result = await session.call_tool("get_pitching_stats_bref", {"season": 2023})
 
             # Verify successful response
             assert not result.isError, "Expected successful response"

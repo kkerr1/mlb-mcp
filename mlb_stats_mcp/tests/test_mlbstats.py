@@ -62,9 +62,7 @@ async def test_get_schedule_tool():
 
             # Verify game dates are within the requested range
             game_dates = [game["game_date"] for game in data]
-            assert all(
-                "2018-07" in date for date in game_dates
-            ), "All games should be in July 2018"
+            assert all("2018-07" in date for date in game_dates), "All games should be in July 2018"
 
             # Verify required fields exist in each game
             required_fields = [
@@ -76,9 +74,7 @@ async def test_get_schedule_tool():
             ]
             for game in data:
                 for field in required_fields:
-                    assert (
-                        field in game
-                    ), f"Missing '{field}' in game {game.get('game_id')}"
+                    assert field in game, f"Missing '{field}' in game {game.get('game_id')}"
 
             # Verify specific games from the logs
             game_ids = [game["game_id"] for game in data]
@@ -132,9 +128,7 @@ async def test_lookup_player_tool():
             assert len(data["people"]) > 0, "Player data should not be empty"
 
             # Test with invalid player name
-            result = await session.call_tool(
-                "lookup_player", {"name": "Invalid Player Name 123"}
-            )
+            result = await session.call_tool("lookup_player", {"name": "Invalid Player Name 123"})
             print(result)
             assert result.isError, "Expected error response for invalid player name"
             assert result.content, "No error content returned"
@@ -270,9 +264,7 @@ async def test_get_stats_tool():
             assert result.isError, "Expected error response for invalid endpoint"
             assert result.content, "No error content returned"
             error_text = result.content[0].text
-            assert (
-                "Error in get_stats" in error_text
-            ), "Error message should mention get_stats"
+            assert "Error in get_stats" in error_text, "Error message should mention get_stats"
 
 
 @pytest.mark.asyncio
@@ -422,9 +414,7 @@ async def test_get_meta_tool():
             assert result.isError, "Expected error response for invalid type name"
             assert result.content, "No error content returned"
             error_text = result.content[0].text
-            assert (
-                "Error in get_meta" in error_text
-            ), "Error message should mention get_meta"
+            assert "Error in get_meta" in error_text, "Error message should mention get_meta"
 
 
 @pytest.mark.asyncio
@@ -496,15 +486,11 @@ async def test_get_notes_tool():
                 assert field in data, f"Notes missing expected field: {field}"
 
             # Test with invalid endpoint
-            result = await session.call_tool(
-                "get_notes", {"endpoint": "invalid_endpoint"}
-            )
+            result = await session.call_tool("get_notes", {"endpoint": "invalid_endpoint"})
             assert result.isError, "Expected error response for invalid endpoint"
             assert result.content, "No error content returned"
             error_text = result.content[0].text
-            assert (
-                "Error in get_notes" in error_text
-            ), "Error message should mention get_notes"
+            assert "Error in get_notes" in error_text, "Error message should mention get_notes"
 
 
 @pytest.mark.asyncio
@@ -524,9 +510,7 @@ async def test_get_game_scoring_play_data_tool():
                 pytest.skip("get_game_scoring_play_data tool not available")
 
             # Test with valid game ID
-            result = await session.call_tool(
-                "get_game_scoring_play_data", {"game_id": 565997}
-            )
+            result = await session.call_tool("get_game_scoring_play_data", {"game_id": 565997})
 
             # Verify successful response
             assert not result.isError, "Expected successful response"
@@ -537,14 +521,10 @@ async def test_get_game_scoring_play_data_tool():
             data = json.loads(result.content[0].text)
             expected_fields = ["away", "home", "plays"]
             for field in expected_fields:
-                assert (
-                    field in data
-                ), f"Scoring play data missing expected field: {field}"
+                assert field in data, f"Scoring play data missing expected field: {field}"
 
             # Test with invalid game ID
-            result = await session.call_tool(
-                "get_game_scoring_play_data", {"game_id": 999999999}
-            )
+            result = await session.call_tool("get_game_scoring_play_data", {"game_id": 999999999})
             assert result.isError, "Expected error response for invalid game ID"
             assert result.content, "No error content returned"
             error_text = result.content[0].text
@@ -628,9 +608,7 @@ async def test_get_league_leader_data_tool():
             data = json.loads(result.content[0].text)
             expected_fields = ["leaders", "season", "categories"]
             for field in expected_fields:
-                assert (
-                    field in data
-                ), f"League leader data missing expected field: {field}"
+                assert field in data, f"League leader data missing expected field: {field}"
 
             # Test with invalid parameters
             result = await session.call_tool(
@@ -803,9 +781,7 @@ async def test_get_game_highlight_data_tool():
                 pytest.skip("get_game_highlight_data tool not available")
 
             # Test with valid game ID
-            result = await session.call_tool(
-                "get_game_highlight_data", {"game_id": 565997}
-            )
+            result = await session.call_tool("get_game_highlight_data", {"game_id": 565997})
 
             # Verify successful response
             assert not result.isError, "Expected successful response"
@@ -819,9 +795,7 @@ async def test_get_game_highlight_data_tool():
 
             # If there are highlights, verify their structure
             if highlight_data:
-                assert isinstance(
-                    highlight_data, list
-                ), "Highlight data should be a list"
+                assert isinstance(highlight_data, list), "Highlight data should be a list"
                 first_highlight = highlight_data[0]
                 expected_fields = [
                     "date",
@@ -833,14 +807,10 @@ async def test_get_game_highlight_data_tool():
                     "title",
                 ]
                 for field in expected_fields:
-                    assert (
-                        field in first_highlight
-                    ), f"Highlight missing expected field: {field}"
+                    assert field in first_highlight, f"Highlight missing expected field: {field}"
 
             # Test with invalid game ID
-            result = await session.call_tool(
-                "get_game_highlight_data", {"game_id": 999999999}
-            )
+            result = await session.call_tool("get_game_highlight_data", {"game_id": 999999999})
             assert result.isError, "Expected error response for invalid game ID"
             assert result.content, "No error content returned"
             error_text = result.content[0].text

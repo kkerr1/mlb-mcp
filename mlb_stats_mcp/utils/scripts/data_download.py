@@ -28,9 +28,7 @@ def download_pybaseball_data():
     # List of data files that might be missing
     data_files = ["mlb_url_team_ID.csv", "fangraphs_teams.csv", "mlbstadiums.csv"]
 
-    base_url = (
-        "https://raw.githubusercontent.com/jldbc/pybaseball/master/pybaseball/data/"
-    )
+    base_url = "https://raw.githubusercontent.com/jldbc/pybaseball/master/pybaseball/data/"
 
     for filename in data_files:
         filepath = os.path.join(data_dir, filename)

@@ -38,9 +38,7 @@ def setup_logging(logger_name: Optional[str] = None) -> logging.Logger:
     logger.setLevel(level)
 
     # Create formatter
-    formatter = logging.Formatter(
-        "%(asctime)s - %(levelname)8s - %(name)s - %(message)s"
-    )
+    formatter = logging.Formatter("%(asctime)s - %(levelname)8s - %(name)s - %(message)s")
 
     # Clear existing handlers to avoid duplicate logs
     logger.handlers = []
@@ -60,17 +58,13 @@ def setup_logging(logger_name: Optional[str] = None) -> logging.Logger:
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
-        logger.info(
-            f"Logging configured at {log_level} level, writing to {full_log_path}"
-        )
+        logger.info(f"Logging configured at {log_level} level, writing to {full_log_path}")
     else:
         # Stream handler if no log file is specified
         stream_handler = logging.StreamHandler()
         stream_handler.setFormatter(formatter)
         logger.addHandler(stream_handler)
 
-        logger.info(
-            f"MLB Stats API logging configured at {log_level} level, writing to stdout"
-        )
+        logger.info(f"MLB Stats API logging configured at {log_level} level, writing to stdout")
 
     return logger

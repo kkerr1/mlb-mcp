@@ -15,6 +15,7 @@ dependencies = [
     "pre-commit>=4.2.0",
     "matplotlib>=3.10.3",
     "pybaseball>=2.2.7",
+    "fastapi>=0.115.12",
 ]
 requires-python = ">=3.10"
 
@@ -31,7 +32,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.ruff]
-line-length = 88
+line-length = 100
 target-version = "py310"
 select = [
     "E",  # pycodestyle errors

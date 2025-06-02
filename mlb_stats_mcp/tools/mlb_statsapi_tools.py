@@ -29,9 +29,7 @@ async def get_stats(endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
         Exception: If there's an error accessing the MLB Stats API
     """
     try:
-        logger.debug(
-            f"Calling MLB Stats API endpoint: {endpoint} with params: {params}"
-        )
+        logger.debug(f"Calling MLB Stats API endpoint: {endpoint} with params: {params}")
         result = statsapi.get(endpoint, params)
         logger.debug(f"MLB Stats API response received for endpoint: {endpoint}")
         return result
@@ -267,14 +265,13 @@ async def get_team_leaders(
         Exception: If there's an error retrieving team leaders
     """
     try:
-        logger.debug(
-            f"Retrieving team leaders for team: {team_id} | category: {leader_category}"
-        )
+        logger.debug(f"Retrieving team leaders for team: {team_id} | category: {leader_category}")
 
         leaders_text = statsapi.team_leaders(
             team_id,
             leader_category,
             limit=10 if limit is None else limit,
+            leaderGameTypes=leader_game_type,
             season=season,
         )
 
@@ -357,9 +354,7 @@ async def get_boxscore(game_id: int, timecode: Optional[str] = None) -> Dict[str
 
 
 # Historical Context Tools
-async def get_game_pace(
-    season: Optional[int] = None, team_id: Optional[int] = None
-) -> Dict[str, Any]:
+async def get_game_pace(season: Optional[int] = None) -> Dict[str, Any]:
     """
     Get game pace data to analyze how game length affects performance.
 
@@ -378,15 +373,12 @@ async def get_game_pace(
 
         if season is not None:
             kwargs["season"] = season
-        if team_id is not None:
-            kwargs["teamId"] = team_id
 
         logger.debug(f"Retrieving game pace data with params: {kwargs}")
         result = statsapi.game_pace_data(**kwargs)
 
         season_txt = f"season {season}" if season else "current season"
-        team_txt = f"team ID {team_id}" if team_id else "all teams"
-        logger.debug(f"Retrieved game pace data for {season_txt}, {team_txt}")
+        logger.debug(f"Checking season: {season_txt}")
 
         return result
     except Exception as e:
@@ -472,8 +464,7 @@ async def get_available_endpoints() -> Dict[str, Any]:
                     "fields",
                 ],
                 "notes": (
-                    "Call awards endpoint with no parameters to return a list of "
-                    "awardIds."
+                    "Call awards endpoint with no parameters to return a list of " "awardIds."
                 ),
             },
             "conferences": {
@@ -487,8 +478,7 @@ async def get_available_endpoints() -> Dict[str, Any]:
                 "required_params": [],
                 "all_params": ["ver", "divisionId", "leagueId", "sportId", "season"],
                 "notes": (
-                    "Call divisions endpoint with no parameters to return a list of "
-                    "divisions."
+                    "Call divisions endpoint with no parameters to return a list of " "divisions."
                 ),
             },
             "draft": {
@@ -604,8 +594,7 @@ async def get_available_endpoints() -> Dict[str, Any]:
                 "required_params": ["personId", "gamePk"],
                 "all_params": ["ver", "personId", "gamePk", "fields"],
                 "notes": (
-                    "Specify 'current' instead of a gamePk for a player's current "
-                    "game stats."
+                    "Specify 'current' instead of a gamePk for a player's current " "game stats."
                 ),
             },
             "schedule": {
@@ -672,8 +661,7 @@ async def get_available_endpoints() -> Dict[str, Any]:
                     "endDate",
                 ],
                 "notes": (
-                    "If no limit is specified, the response will be limited to 50 "
-                    "records."
+                    "If no limit is specified, the response will be limited to 50 " "records."
                 ),
             },
             "stats_leaders": {
@@ -765,9 +753,7 @@ async def get_available_endpoints() -> Dict[str, Any]:
             },
         }
 
-        logger.debug(
-            f"Retrieved information for {len(endpoints)} MLB Stats API endpoints"
-        )
+        logger.debug(f"Retrieved information for {len(endpoints)} MLB Stats API endpoints")
         return {
             "endpoints": endpoints,
             "usage_note": (
@@ -821,29 +807,19 @@ async def get_notes(endpoint: str) -> Dict[str, Any]:
                 continue
 
             if "All path parameters:" in line:
-                params = (
-                    line.split(":")[1].strip().strip("[]").replace("'", "").split(", ")
-                )
+                params = line.split(":")[1].strip().strip("[]").replace("'", "").split(", ")
                 result["path_params"] = [p for p in params if p]
             elif "All query parameters:" in line:
-                params = (
-                    line.split(":")[1].strip().strip("[]").replace("'", "").split(", ")
-                )
+                params = line.split(":")[1].strip().strip("[]").replace("'", "").split(", ")
                 result["query_params"] = [p for p in params if p]
             elif "Required path parameters" in line:
-                params = (
-                    line.split(":")[1].strip().strip("[]").replace("'", "").split(", ")
-                )
+                params = line.split(":")[1].strip().strip("[]").replace("'", "").split(", ")
                 result["required_params"].extend([p for p in params if p])
             elif "Required query parameters:" in line:
-                params = (
-                    line.split(":")[1].strip().strip("[]").replace("'", "").split(", ")
-                )
+                params = line.split(":")[1].strip().strip("[]").replace("'", "").split(", ")
                 if params and params[0] != "None":
                     result["required_params"].extend([p for p in params if p])
-            elif line.startswith("The hydrate function") or line.startswith(
-                "Call the endpoint"
-            ):
+            elif line.startswith("The hydrate function") or line.startswith("Call the endpoint"):
                 result["hints"] += line + "\n"
 
         # Combine path and query params for all_params
@@ -926,6 +902,7 @@ async def get_league_leader_data(
     limit: Optional[int] = None,
     stat_group: Optional[str] = None,
     league_id: Optional[int] = None,
+    game_types: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Get league leader statistics for specified categories.
@@ -944,9 +921,7 @@ async def get_league_leader_data(
         Exception: If there's an error retrieving league leader data
     """
     try:
-        logger.debug(
-            f"Retrieving league leader data for categories: {leader_categories}"
-        )
+        logger.debug(f"Retrieving league leader data for categories: {leader_categories}")
 
         # Build parameters dictionary
         params = {
@@ -961,6 +936,8 @@ async def get_league_leader_data(
             params["statGroup"] = stat_group
         if league_id is not None:
             params["leagueId"] = league_id
+        if game_types is not None:
+            params["gameTypes"] = game_types
 
         # Get leader data
         leader_data = statsapi.league_leader_data(**params)

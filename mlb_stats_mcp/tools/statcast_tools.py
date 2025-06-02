@@ -145,8 +145,7 @@ async def get_statcast_batter_data(
             logger.debug(f"No start date provided, using yesterday: {start_dt}")
 
         logger.debug(
-            f"Retrieving Statcast data for batter ID"
-            f"{player_id} from {start_dt} to {end_dt}"
+            f"Retrieving Statcast data for batter ID" f"{player_id} from {start_dt} to {end_dt}"
         )
 
         # Call pybaseball's statcast_batter function
@@ -194,8 +193,7 @@ async def get_statcast_pitcher_data(
             logger.debug(f"No start date provided, using yesterday: {start_dt}")
 
         logger.debug(
-            f"Retrieving Statcast data for pitcher ID "
-            f"{player_id} from {start_dt} to {end_dt}"
+            f"Retrieving Statcast data for pitcher ID " f"{player_id} from {start_dt} to {end_dt}"
         )
 
         # Call pybaseball's statcast_pitcher function
@@ -246,8 +244,7 @@ async def get_statcast_batter_exitvelo_barrels(
             raise Exception("No statcast data found")
 
         logger.debug(
-            f"Retrieved exit velocity data for "
-            f"{len(df) if df is not None else 0} batters"
+            f"Retrieved exit velocity data for " f"{len(df) if df is not None else 0} batters"
         )
 
         return _convert_dataframe_to_dict(df)
@@ -287,8 +284,7 @@ async def get_statcast_pitcher_exitvelo_barrels(
             raise Exception("No statcast data found")
 
         logger.debug(
-            f"Retrieved exit velocity data for "
-            f"{len(df) if df is not None else 0} pitchers"
+            f"Retrieved exit velocity data for " f"{len(df) if df is not None else 0} pitchers"
         )
 
         return _convert_dataframe_to_dict(df)
@@ -327,9 +323,7 @@ async def get_statcast_batter_expected_stats(
         if len(df) == 0:
             raise Exception("No statcast data found")
 
-        logger.debug(
-            f"Retrieved expected stats for {len(df) if df is not None else 0} batters"
-        )
+        logger.debug(f"Retrieved expected stats for {len(df) if df is not None else 0} batters")
 
         return _convert_dataframe_to_dict(df)
     except Exception as e:
@@ -367,9 +361,7 @@ async def get_statcast_pitcher_expected_stats(
         if len(df) == 0:
             raise Exception("No statcast data found")
 
-        logger.debug(
-            f"Retrieved expected stats for {len(df) if df is not None else 0} pitchers"
-        )
+        logger.debug(f"Retrieved expected stats for {len(df) if df is not None else 0} pitchers")
 
         return _convert_dataframe_to_dict(df)
     except Exception as e:
@@ -402,9 +394,7 @@ async def get_statcast_batter_percentile_ranks(
         if len(df) == 0:
             raise Exception("No statcast data found")
 
-        logger.debug(
-            f"Retrieved percentile ranks for {len(df) if df is not None else 0} batters"
-        )
+        logger.debug(f"Retrieved percentile ranks for {len(df) if df is not None else 0} batters")
 
         return _convert_dataframe_to_dict(df)
     except Exception as e:
@@ -438,8 +428,7 @@ async def get_statcast_pitcher_percentile_ranks(
             raise Exception("No statcast data found")
 
         logger.debug(
-            f"Retrieved percentile ranks for "
-            f"{len(df) if df is not None else 0} pitchers"
+            f"Retrieved percentile ranks for " f"{len(df) if df is not None else 0} pitchers"
         )
 
         return _convert_dataframe_to_dict(df)
@@ -467,9 +456,7 @@ async def get_statcast_batter_pitch_arsenal(
         Exception: If there's an error retrieving batter pitch arsenal data
     """
     try:
-        logger.debug(
-            f"Retrieving batter pitch arsenal data for {year} with minimum PA: {minPA}"
-        )
+        logger.debug(f"Retrieving batter pitch arsenal data for {year} with minimum PA: {minPA}")
 
         # Call pybaseball's statcast_batter_pitch_arsenal function
         df = statcast_batter_pitch_arsenal(year, minPA)
@@ -478,8 +465,7 @@ async def get_statcast_batter_pitch_arsenal(
             raise Exception("No statcast data found")
 
         logger.debug(
-            f"Retrieved pitch arsenal data for "
-            f"{len(df) if df is not None else 0} batters"
+            f"Retrieved pitch arsenal data for " f"{len(df) if df is not None else 0} batters"
         )
 
         return _convert_dataframe_to_dict(df)
@@ -523,8 +509,7 @@ async def get_statcast_pitcher_pitch_arsenal(
             raise Exception("No statcast data found")
 
         logger.debug(
-            f"Retrieved pitch arsenal data for "
-            f"{len(df) if df is not None else 0} pitchers"
+            f"Retrieved pitch arsenal data for " f"{len(df) if df is not None else 0} pitchers"
         )
 
         return _convert_dataframe_to_dict(df)
@@ -559,8 +544,7 @@ async def get_statcast_single_game(
             raise Exception("No statcast data found")
 
         logger.debug(
-            f"Retrieved {len(df) if df is not None else 0} "
-            f"Statcast records for game {game_pk}"
+            f"Retrieved {len(df) if df is not None else 0} " f"Statcast records for game {game_pk}"
         )
 
         return _convert_dataframe_to_dict(df)
