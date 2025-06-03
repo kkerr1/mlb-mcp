@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+  baseball-mcp:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./mlb_stats_mcp:/app/mlb_stats_mcp # Mount source code
+      - ./.env:/app/.env # Mount env file too
+    environment:
+      - PYTHONPATH=/app

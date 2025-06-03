@@ -15,11 +15,14 @@ WORKDIR /app
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
 
-# Copy the entire project
-COPY mlb_stats_mcp /app/mlb_stats_mcp
+# Create a minimal package structure for uv sync
+RUN mkdir -p mlb_stats_mcp && touch mlb_stats_mcp/__init__.py
 
 # Install dependencies
 RUN uv sync --frozen
+
+# Copy the entire project
+COPY mlb_stats_mcp /app/mlb_stats_mcp
 
 # Copy .env file to the working directory
 COPY .env /app/.env

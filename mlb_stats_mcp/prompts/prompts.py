@@ -416,7 +416,7 @@ Create detailed HTML report including:
 - Visual breakdowns of key moments
 - Post-game implications (standings, playoff picture, etc.)
 
-Structure the recap like a professional sports article with data-driven insights."""
+Structure the recap like a professional proprietary scouting report with data-driven insights."""
 
 
 def statistical_deep_dive(
@@ -471,4 +471,4 @@ HTML format with:
 - Statistical correlations and insights
 - Predictions and trends to watch
 
-Make it suitable for both casual fans and serious analysts."""
+Make it suitable for serious analysts."""
