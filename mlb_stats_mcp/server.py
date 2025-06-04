@@ -70,6 +70,7 @@ def mcp_tool_wrapper(func):
     # Create a wrapper function with the same signature as the original function
     async def wrapper(*args, **kwargs):
         try:
+            logger.info(f"tool {func.__name__} called")
             return await func(*args, **kwargs)
         except Exception as e:
             logger.error(f"Error in {func.__name__}: {e!s}")

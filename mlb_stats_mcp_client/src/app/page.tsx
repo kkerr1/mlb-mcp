@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import {
@@ -34,6 +35,7 @@ interface Prompt {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +59,7 @@ export default function Home() {
         }
 
         const client = new Client({
-          name: "ai-baseball-scout",
+          name: "ai-baseball-analyst",
           version: "1.0.0",
         });
 
@@ -69,7 +71,6 @@ export default function Home() {
 
         // List all available prompts
         const promptList = await client.listPrompts();
-        console.log(promptList);
         setPrompts(promptList.prompts || []);
       } catch (err) {
         console.error("Failed to initialize MCP client:", err);
@@ -171,7 +172,30 @@ export default function Home() {
 
   const handleSubmit = () => {
     console.log("Submitting prompt:", completePromptText);
-    // Add your submit logic here
+
+    if (!completePromptText.trim()) {
+      console.error("No prompt text to submit");
+      return;
+    }
+
+    if (!mcpClient) {
+      console.error("MCP client not available");
+      return;
+    }
+
+    // Store data in sessionStorage for the results page
+    const submissionData = {
+      completePromptText,
+      mcpServerUrl: process.env.NEXT_PUBLIC_MLB_STATS_MCP_URL,
+    };
+
+    sessionStorage.setItem(
+      "baseball-submission-data",
+      JSON.stringify(submissionData)
+    );
+
+    // Navigate to results page
+    router.push("/results");
   };
 
   return (
@@ -180,24 +204,43 @@ export default function Home() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-2">
-            AI Baseball Scout ⚾️
+            AI Baseball Analyst ⚾️
           </h1>
           <p className="text-muted-foreground">
-            Connect to your MCP baseball statistics server
+            Generate statistical reports about baseball using an LLM enabled
+            with Model Context Protocol
           </p>
         </div>
 
         {/* Content */}
         <Card>
           <CardHeader>
-            <CardTitle>MCP Connection Status</CardTitle>
-            <CardDescription>
-              {loading
-                ? "Establishing connection to MCP server..."
-                : error
-                ? "Connection failed"
-                : `Connected successfully - ${prompts.length} prompts available`}
-            </CardDescription>
+            <CardTitle>Connection Status</CardTitle>
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className="flex items-center gap-2 text-sm"
+              >
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    loading
+                      ? "bg-muted-foreground"
+                      : error
+                      ? "bg-destructive"
+                      : "bg-green-500"
+                  }`}
+                ></div>
+                {loading ? "Establishing" : error ? "Failed" : "Connected"}
+              </Badge>
+              {!loading && !error && (
+                <Badge
+                  variant="secondary"
+                  className="flex items-center gap-2 text-sm bg-white text-black border"
+                >
+                  ({prompts.length}) prompts available
+                </Badge>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
