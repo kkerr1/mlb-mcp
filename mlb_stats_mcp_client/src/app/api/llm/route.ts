@@ -144,7 +144,7 @@ async function getMCPClient(): Promise<Client> {
 
     const transport = new StreamableHTTPClientTransport(new URL(url));
     await client.connect(transport);
-    
+
     globalMCPClient = client;
     return client;
   })();
