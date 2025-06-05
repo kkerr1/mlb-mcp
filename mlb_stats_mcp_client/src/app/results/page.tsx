@@ -9,10 +9,22 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
+interface MCPTool {
+  name: string;
+  description?: string;
+  inputSchema: {
+    type: "object";
+    properties?: Record<string, unknown>;
+    required?: string[];
+  };
+  outputSchema?: Record<string, unknown>;
+  annotations?: Record<string, unknown>;
+}
+
 interface LLMRequestPayload {
   prompt: string;
   systemPrompt: string;
-  availableTools: any[];
+  availableTools: MCPTool[];
   modelConfig: {
     model: string;
     maxTokens: number;
@@ -30,6 +42,7 @@ export default function ResultsPage() {
   const [submissionData, setSubmissionData] = useState<{
     completePromptText: string;
     mcpServerUrl: string;
+    model?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -54,6 +67,7 @@ export default function ResultsPage() {
   const initializeMCPAndGenerate = async (data: {
     completePromptText: string;
     mcpServerUrl: string;
+    model?: string;
   }) => {
     try {
       // Initialize MCP client
@@ -69,7 +83,7 @@ export default function ResultsPage() {
       setMcpClient(client);
 
       // Generate the report
-      await generateReport(data.completePromptText, client);
+      await generateReport(data.completePromptText, client, data.model);
     } catch (error) {
       console.error("Error initializing MCP client:", error);
       setError(
@@ -83,20 +97,11 @@ export default function ResultsPage() {
 
   const prepareRequestPayload = async (
     prompt: string,
-    client: Client
+    client: Client,
+    model?: string
   ): Promise<LLMRequestPayload> => {
     const toolsResponse = await client.listTools();
-    const availableTools = toolsResponse.tools || [];
-
-    const formattedTools = availableTools.map((tool) => ({
-      name: tool.name,
-      description: tool.description || `Execute ${tool.name}`,
-      input_schema: tool.inputSchema || {
-        type: "object",
-        properties: {},
-        required: [],
-      },
-    }));
+    const availableTools = (toolsResponse.tools || []) as MCPTool[];
 
     const systemPrompt = `You are an expert baseball analyst with access to comprehensive MLB data through specialized tools.
 
@@ -113,49 +118,55 @@ IMPORTANT INSTRUCTIONS:
 - Ensure all visualizations are included as base64 images
 - The HTML should be ready to display in a browser
 
-Available MCP tools: ${formattedTools.map((t) => t.name).join(", ")}
+Available MCP tools: ${availableTools.map((t) => t.name).join(", ")}
 
 Execute the prompt instructions and return ONLY the final HTML document.`;
 
     return {
       prompt,
       systemPrompt,
-      availableTools: formattedTools,
+      availableTools: availableTools,
       modelConfig: {
-        model: "claude-3-5-sonnet-20241022",
+        model: model || "claude-3-5-sonnet-20241022",
         maxTokens: 8000,
       },
     };
   };
 
-  const generateReport = async (prompt: string, client: Client) => {
+  const generateReport = async (
+    prompt: string,
+    client: Client,
+    model?: string
+  ) => {
     try {
       setLoading(true);
       setError(null);
 
-      const payload = await prepareRequestPayload(prompt, client);
+      const payload = await prepareRequestPayload(prompt, client, model);
       setRequestPayload(payload);
 
       console.log("Request payload prepared for server-side API:");
       console.log(payload);
 
-      // TODO: Replace this with actual API call to your server-side endpoint
-      // const response = await fetch('/api/generate-report', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(payload)
-      // });
-      //
-      // if (!response.ok) {
-      //   throw new Error(`HTTP error! status: ${response.status}`);
-      // }
-      //
-      // const result = await response.json();
-      // setHtmlResult(result.html);
+      const response = await fetch("/api/llm", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
-      await simulateApiCall(payload);
+      console.log(response);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error(errorData);
+        throw new Error(`API error: ${errorData.error || response.statusText}`);
+      }
+
+      // The API returns HTML directly as text/html
+      const htmlResult = await response.text();
+      setHtmlResult(htmlResult);
     } catch (err) {
       console.error("Error generating report:", err);
       setError(
@@ -168,136 +179,13 @@ Execute the prompt instructions and return ONLY the final HTML document.`;
     }
   };
 
-  const simulateApiCall = async (payload: LLMRequestPayload) => {
-    console.log("Simulating server-side API call with payload:");
-    console.log("Prompt length:", payload.prompt.length);
-    console.log(
-      "Available tools:",
-      payload.availableTools.map((t) => t.name)
-    );
-    console.log("Model config:", payload.modelConfig);
-
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    const mockHtml = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baseball Analysis Report</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f5f5f5;
-            color: #333;
-            line-height: 1.6;
-        }
-        .container {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #003366;
-        }
-        .payload-info {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #003366;
-            margin-bottom: 30px;
-        }
-        .tool-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-        .tool-card {
-            background: #e3f2fd;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #2196f3;
-        }
-        .tool-name {
-            font-weight: bold;
-            color: #1976d2;
-            margin-bottom: 5px;
-        }
-        .tool-desc {
-            font-size: 14px;
-            color: #666;
-        }
-        .navigation {
-            background: #fff3cd;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 30px;
-            border: 1px solid #ffc107;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>⚾ Baseball Analysis Report</h1>
-            <p>Generated using Next.js routing and server-side API preparation</p>
-        </div>
-
-        <div class="payload-info">
-            <h3>📋 Request Payload Summary</h3>
-            <p><strong>Model:</strong> ${payload.modelConfig.model}</p>
-            <p><strong>Max Tokens:</strong> ${payload.modelConfig.maxTokens}</p>
-            <p><strong>Prompt Length:</strong> ${
-              payload.prompt.length
-            } characters</p>
-            <p><strong>Available Tools:</strong> ${
-              payload.availableTools.length
-            }</p>
-        </div>
-
-        <h3>🔧 Available MCP Tools</h3>
-        <div class="tool-list">
-            ${payload.availableTools
-              .map(
-                (tool) => `
-                <div class="tool-card">
-                    <div class="tool-name">${tool.name}</div>
-                    <div class="tool-desc">${tool.description}</div>
-                </div>
-            `
-              )
-              .join("")}
-        </div>
-
-        <div class="navigation">
-            <h3>🚀 Next Steps</h3>
-            <ol>
-                <li>Create the server-side API endpoint at <code>/app/api/generate-report/route.ts</code></li>
-                <li>Integrate with Anthropic Claude API server-side</li>
-                <li>Handle MCP tool execution in the API route</li>
-                <li>Return the generated HTML from Claude</li>
-            </ol>
-            <p><strong>This is now using proper Next.js routing with sessionStorage!</strong></p>
-        </div>
-    </div>
-</body>
-</html>`;
-
-    setHtmlResult(mockHtml);
-  };
-
   const handleRetry = () => {
     if (submissionData && mcpClient) {
-      generateReport(submissionData.completePromptText, mcpClient);
+      generateReport(
+        submissionData.completePromptText,
+        mcpClient,
+        submissionData.model
+      );
     }
   };
 
@@ -450,7 +338,7 @@ Execute the prompt instructions and return ONLY the final HTML document.`;
 
                 <div className="flex justify-between items-center pt-4">
                   <p className="text-sm text-muted-foreground">
-                    Mock response generated. Ready for server-side integration!
+                    Report generated using LLM!
                   </p>
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={handleBackToHome}>

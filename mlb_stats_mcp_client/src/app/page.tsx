@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowDown } from "lucide-react";
 
 interface Prompt {
   name: string;
@@ -45,6 +45,9 @@ export default function Home() {
   );
   const [completePromptText, setCompletePromptText] = useState<string>("");
   const [mcpClient, setMcpClient] = useState<Client | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>(
+    "claude-3-5-sonnet-20241022"
+  );
 
   useEffect(() => {
     const initializeMCPClient = async () => {
@@ -128,8 +131,6 @@ export default function Home() {
         arguments: argValues,
       });
 
-      console.log("Prompt completion result:", result);
-
       // Extract the prompt text from the result
       if (result && result.messages && result.messages.length > 0) {
         const promptText = result.messages
@@ -170,6 +171,10 @@ export default function Home() {
       allRequiredArgsFilled &&
       completePromptText.trim() !== "");
 
+  const scrollToBottom = () => {
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  };
+
   const handleSubmit = () => {
     console.log("Submitting prompt:", completePromptText);
 
@@ -187,6 +192,7 @@ export default function Home() {
     const submissionData = {
       completePromptText,
       mcpServerUrl: process.env.NEXT_PUBLIC_MLB_STATS_MCP_URL,
+      model: selectedModel,
     };
 
     sessionStorage.setItem(
@@ -264,29 +270,21 @@ export default function Home() {
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">
+                <div className="space-y-4">
+                  <label className="text-lg font-semibold text-foreground">
                     Select a Prompt
                   </label>
                   <Select
                     value={selectedPrompt}
                     onValueChange={handlePromptChange}
                   >
-                    <SelectTrigger className="h-auto min-h-10 py-3">
+                    <SelectTrigger className="h-auto min-h-14 py-4">
                       <SelectValue placeholder="Choose a prompt..." />
                     </SelectTrigger>
                     <SelectContent className="max-h-80">
-                      <SelectItem value="custom">
-                        <div className="flex flex-col items-start py-1">
-                          <span className="font-medium">Custom Prompt</span>
-                          <span className="text-xs text-muted-foreground mt-1">
-                            Create your own custom prompt
-                          </span>
-                        </div>
-                      </SelectItem>
                       {prompts.map((prompt, index) => (
                         <SelectItem key={index} value={prompt.name}>
-                          <div className="flex flex-col items-start py-1">
+                          <div className="flex flex-col items-start justify-center py-2 min-h-12">
                             <span className="font-medium">{prompt.name}</span>
                             {prompt.description && (
                               <span className="text-xs text-muted-foreground mt-1 max-w-xs truncate">
@@ -296,6 +294,14 @@ export default function Home() {
                           </div>
                         </SelectItem>
                       ))}
+                      <SelectItem value="custom">
+                        <div className="flex flex-col items-start justify-center py-2 min-h-12 border-t pt-4 mt-2">
+                          <span className="font-medium">Custom Prompt</span>
+                          <span className="text-xs text-muted-foreground mt-1">
+                            Advanced: Create your own custom prompt
+                          </span>
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -385,6 +391,16 @@ export default function Home() {
                       <CardDescription>
                         Review and edit your complete prompt before submitting
                       </CardDescription>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={scrollToBottom}
+                          variant="outline"
+                          className="flex items-center gap-2"
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                          Scroll to Submit
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <Textarea
@@ -393,13 +409,46 @@ export default function Home() {
                         onChange={(e) => setCompletePromptText(e.target.value)}
                         className="min-h-32 resize-none"
                       />
-                      <Button
-                        onClick={handleSubmit}
-                        className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                        disabled={!completePromptText.trim()}
-                      >
-                        Submit
-                      </Button>
+                      <div className="flex gap-2 items-end">
+                        <div className="flex-1">
+                          <label className="text-sm font-medium text-foreground mb-2 block">
+                            Select Model
+                          </label>
+                          <Select
+                            value={selectedModel}
+                            onValueChange={setSelectedModel}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="claude-3-5-sonnet-20241022">
+                                Claude 3.5 Sonnet
+                              </SelectItem>
+                              <SelectItem value="claude-sonnet-4-20250514">
+                                Claude Sonnet 4
+                              </SelectItem>
+                              <SelectItem value="claude-3-haiku-20240307">
+                                Claude 3 Haiku
+                              </SelectItem>
+                              <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                              <SelectItem value="gpt-4o-mini">
+                                GPT-4o Mini
+                              </SelectItem>
+                              <SelectItem value="gpt-4-turbo">
+                                GPT-4 Turbo
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button
+                          onClick={handleSubmit}
+                          className="bg-destructive hover:bg-destructive/90 text-destructive-foreground px-8"
+                          disabled={!completePromptText.trim()}
+                        >
+                          Submit
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
