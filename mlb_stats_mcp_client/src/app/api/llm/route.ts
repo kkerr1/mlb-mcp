@@ -112,24 +112,51 @@ function extractHTML(content: string): string {
   return "";
 }
 
-// Initialize MCP client
-async function initializeMCPClient() {
-  const url = process.env.NEXT_PUBLIC_MLB_STATS_MCP_URL;
-  if (!url) {
-    throw new Error(
-      "NEXT_PUBLIC_MLB_STATS_MCP_URL environment variable is not set"
-    );
+// Global MCP client instance for reuse across API calls
+let globalMCPClient: Client | null = null;
+let clientInitializationPromise: Promise<Client> | null = null;
+
+// Initialize MCP client with connection reuse
+async function getMCPClient(): Promise<Client> {
+  // If client already exists and is connected, return it
+  if (globalMCPClient) {
+    return globalMCPClient;
   }
 
-  const client = new Client({
-    name: "ai-baseball-analyst-backend",
-    version: "1.0.0",
-  });
+  // If initialization is already in progress, wait for it
+  if (clientInitializationPromise) {
+    return clientInitializationPromise;
+  }
 
-  const transport = new StreamableHTTPClientTransport(new URL(url));
-  await client.connect(transport);
+  // Start new initialization
+  clientInitializationPromise = (async () => {
+    const url = process.env.NEXT_PUBLIC_MLB_STATS_MCP_URL;
+    if (!url) {
+      throw new Error(
+        "NEXT_PUBLIC_MLB_STATS_MCP_URL environment variable is not set"
+      );
+    }
 
-  return client;
+    const client = new Client({
+      name: "ai-baseball-analyst-backend",
+      version: "1.0.0",
+    });
+
+    const transport = new StreamableHTTPClientTransport(new URL(url));
+    await client.connect(transport);
+    
+    globalMCPClient = client;
+    return client;
+  })();
+
+  try {
+    return await clientInitializationPromise;
+  } catch (error) {
+    // Reset on error so we can retry
+    clientInitializationPromise = null;
+    globalMCPClient = null;
+    throw error;
+  }
 }
 
 // Enhanced executeToolCall function with better error handling
@@ -185,11 +212,11 @@ async function callOpenAI(payload: LLMRequestPayload): Promise<string> {
     // Initialize MCP client for tool execution
     if (payload.availableTools.length > 0) {
       try {
-        mcpClient = await initializeMCPClient();
+        mcpClient = await getMCPClient();
       } catch (mcpError) {
-        console.error("Failed to initialize MCP client:", mcpError);
+        console.error("Failed to get MCP client:", mcpError);
         throw new Error(
-          `MCP initialization failed: ${
+          `MCP client error: ${
             mcpError instanceof Error ? mcpError.message : "Unknown error"
           }`
         );
@@ -266,14 +293,8 @@ async function callOpenAI(payload: LLMRequestPayload): Promise<string> {
     // Don't wrap it in a new Error - preserve the original error structure
     throw error;
   } finally {
-    // Clean up MCP client if needed
-    if (mcpClient) {
-      try {
-        // Add any cleanup logic here if the MCP client has a disconnect method
-      } catch (cleanupError) {
-        console.warn("MCP client cleanup failed:", cleanupError);
-      }
-    }
+    // Note: We intentionally don't disconnect the MCP client here
+    // to allow reuse across multiple API calls
   }
 }
 
@@ -296,14 +317,14 @@ async function callAnthropic(payload: LLMRequestPayload): Promise<string> {
       requestOptions.tools = convertToAnthropicTools(payload.availableTools);
     }
 
-    // Initialize MCP client for tool execution
+    // Get MCP client for tool execution
     if (payload.availableTools.length > 0) {
       try {
-        mcpClient = await initializeMCPClient();
+        mcpClient = await getMCPClient();
       } catch (mcpError) {
-        console.error("Failed to initialize MCP client:", mcpError);
+        console.error("Failed to get MCP client:", mcpError);
         throw new Error(
-          `MCP initialization failed: ${
+          `MCP client error: ${
             mcpError instanceof Error ? mcpError.message : "Unknown error"
           }`
         );

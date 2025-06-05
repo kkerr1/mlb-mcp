@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { useMCP, type Prompt } from "@/lib/mcp-context";
 import {
   Card,
   CardContent,
@@ -24,71 +23,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowDown } from "lucide-react";
 
-interface Prompt {
-  name: string;
-  description?: string;
-  arguments?: Array<{
-    name: string;
-    description?: string;
-    required?: boolean;
-  }>;
-}
-
 export default function Home() {
   const router = useRouter();
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { client: mcpClient, prompts, loading, error } = useMCP();
   const [selectedPrompt, setSelectedPrompt] = useState<string>("");
   const [argumentValues, setArgumentValues] = useState<Record<string, string>>(
     {}
   );
   const [completePromptText, setCompletePromptText] = useState<string>("");
-  const [mcpClient, setMcpClient] = useState<Client | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>(
     "claude-3-5-sonnet-20241022"
   );
-
-  useEffect(() => {
-    const initializeMCPClient = async () => {
-      try {
-        // Get the MCP server URL from environment variable
-        const url = process.env.NEXT_PUBLIC_MLB_STATS_MCP_URL;
-
-        if (!url) {
-          throw new Error(
-            "NEXT_PUBLIC_MLB_STATS_MCP_URL environment variable is not set"
-          );
-        }
-
-        const client = new Client({
-          name: "ai-baseball-analyst",
-          version: "1.0.0",
-        });
-
-        const transport = new StreamableHTTPClientTransport(new URL(url));
-
-        await client.connect(transport);
-        console.log("Connected using Streamable HTTP transport");
-        setMcpClient(client);
-
-        // List all available prompts
-        const promptList = await client.listPrompts();
-        setPrompts(promptList.prompts || []);
-      } catch (err) {
-        console.error("Failed to initialize MCP client:", err);
-        setError(
-          `Failed to connect to MCP server: ${
-            err instanceof Error ? err.message : "Unknown error"
-          }`
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeMCPClient();
-  }, []);
 
   const handlePromptChange = (value: string) => {
     setSelectedPrompt(value);
@@ -115,7 +60,7 @@ export default function Home() {
     try {
       // Check if all required arguments are filled
       const allRequiredFilled = (promptData.arguments || []).every(
-        (arg) =>
+        (arg: { name: string; required?: boolean }) =>
           !arg.required ||
           (argValues[arg.name] && argValues[arg.name].trim() !== "")
       );
@@ -154,12 +99,12 @@ export default function Home() {
   const selectedPromptData =
     selectedPrompt === "custom"
       ? null
-      : prompts.find((p) => p.name === selectedPrompt);
+      : prompts.find((p: Prompt) => p.name === selectedPrompt);
 
   // Check if all required arguments are filled
   const allRequiredArgsFilled = selectedPromptData
     ? (selectedPromptData.arguments || []).every(
-        (arg) =>
+        (arg: { name: string; required?: boolean }) =>
           !arg.required ||
           (argumentValues[arg.name] && argumentValues[arg.name].trim() !== "")
       )
@@ -191,7 +136,6 @@ export default function Home() {
     // Store data in sessionStorage for the results page
     const submissionData = {
       completePromptText,
-      mcpServerUrl: process.env.NEXT_PUBLIC_MLB_STATS_MCP_URL,
       model: selectedModel,
     };
 
@@ -338,7 +282,7 @@ export default function Home() {
                             </h4>
                             <div className="space-y-4">
                               {selectedPromptData.arguments.map(
-                                (arg, index) => (
+                                (arg: { name: string; description?: string; required?: boolean }, index: number) => (
                                   <div key={index} className="space-y-2">
                                     <div className="flex items-center gap-2">
                                       <Badge

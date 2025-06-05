@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { useMCP } from "@/lib/mcp-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, RefreshCw } from "lucide-react";
@@ -38,12 +37,11 @@ export default function ResultsPage() {
   const [error, setError] = useState<string | null>(null);
   const [requestPayload, setRequestPayload] =
     useState<LLMRequestPayload | null>(null);
-  const [mcpClient, setMcpClient] = useState<Client | null>(null);
   const [submissionData, setSubmissionData] = useState<{
     completePromptText: string;
-    mcpServerUrl: string;
     model?: string;
   } | null>(null);
+  const { client: mcpClient, tools } = useMCP();
 
   useEffect(() => {
     // Get submission data from sessionStorage
@@ -56,7 +54,7 @@ export default function ResultsPage() {
     try {
       const data = JSON.parse(storedData);
       setSubmissionData(data);
-      initializeMCPAndGenerate(data);
+      initializeAndGenerate(data);
     } catch (error) {
       console.error("Error parsing submission data:", error);
       setError("Invalid submission data");
@@ -64,44 +62,42 @@ export default function ResultsPage() {
     }
   }, [router]);
 
-  const initializeMCPAndGenerate = async (data: {
+  const initializeAndGenerate = useCallback(async (data: {
     completePromptText: string;
-    mcpServerUrl: string;
     model?: string;
   }) => {
+    if (!mcpClient) {
+      setError("MCP client not available");
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Initialize MCP client
-      const client = new Client({
-        name: "ai-baseball-analyst-results",
-        version: "1.0.0",
-      });
-
-      const transport = new StreamableHTTPClientTransport(
-        new URL(data.mcpServerUrl)
-      );
-      await client.connect(transport);
-      setMcpClient(client);
-
-      // Generate the report
-      await generateReport(data.completePromptText, client, data.model);
+      // Generate the report using the shared client
+      await generateReport(data.completePromptText, data.model);
     } catch (error) {
-      console.error("Error initializing MCP client:", error);
+      console.error("Error generating report:", error);
       setError(
-        `Failed to connect to MCP server: ${
+        `Failed to generate report: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
       setLoading(false);
     }
-  };
+  }, [mcpClient, tools]);
+
+  // Effect to generate report when both submission data and MCP client are ready
+  useEffect(() => {
+    if (submissionData && mcpClient && tools.length > 0) {
+      initializeAndGenerate(submissionData);
+    }
+  }, [submissionData, mcpClient, tools, initializeAndGenerate]);
 
   const prepareRequestPayload = async (
     prompt: string,
-    client: Client,
     model?: string
   ): Promise<LLMRequestPayload> => {
-    const toolsResponse = await client.listTools();
-    const availableTools = (toolsResponse.tools || []) as MCPTool[];
+    const availableTools = tools;
 
     const systemPrompt = `You are an expert baseball analyst with access to comprehensive MLB data through specialized tools.
 
@@ -135,14 +131,13 @@ Execute the prompt instructions and return ONLY the final HTML document.`;
 
   const generateReport = async (
     prompt: string,
-    client: Client,
     model?: string
   ) => {
     try {
       setLoading(true);
       setError(null);
 
-      const payload = await prepareRequestPayload(prompt, client, model);
+      const payload = await prepareRequestPayload(prompt, model);
       setRequestPayload(payload);
 
       console.log("Request payload prepared for server-side API:");
@@ -183,7 +178,6 @@ Execute the prompt instructions and return ONLY the final HTML document.`;
     if (submissionData && mcpClient) {
       generateReport(
         submissionData.completePromptText,
-        mcpClient,
         submissionData.model
       );
     }
