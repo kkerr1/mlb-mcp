@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import Anthropic from "@anthropic-ai/sdk";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
@@ -26,39 +25,99 @@ interface LLMRequestPayload {
   };
 }
 
-// Initialize clients
+// Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+// Model configuration with rate limits (tokens per minute)
+const OPENAI_MODELS = {
+  "gpt-4.1-mini": 200_000,
+  "gpt-4.1-nano": 200_000,
+  "gpt-4o-mini": 200_000,
+} as const;
+
+type OpenAIModel = keyof typeof OPENAI_MODELS;
+
+// Rate limiting state
+interface RateLimitState {
+  tokensUsed: number;
+  windowStart: number;
+  requestCount: number;
+}
+
+// In-memory rate limit tracking (in production, use Redis or similar)
+const rateLimitState = new Map<OpenAIModel, RateLimitState>();
+
+// Initialize rate limit state for all models
+Object.keys(OPENAI_MODELS).forEach((model) => {
+  rateLimitState.set(model as OpenAIModel, {
+    tokensUsed: 0,
+    windowStart: Date.now(),
+    requestCount: 0,
+  });
 });
 
-// Helper function to determine if model is OpenAI or Anthropic
-function getModelProvider(model: string): "openai" | "anthropic" | Error {
-  const openaiModels = [
-    "gpt-4",
-    "gpt-4-turbo",
-    "gpt-3.5-turbo",
-    "gpt-4o",
-    "gpt-4o-mini",
-  ];
-  const anthropicModels = [
-    "claude-3-opus",
-    "claude-3-sonnet",
-    "claude-3-haiku",
-    "claude-3-5-sonnet",
-    "claude-sonnet-4",
-  ];
+// Helper function to validate OpenAI model
+function validateOpenAIModel(model: string): model is OpenAIModel {
+  return model in OPENAI_MODELS;
+}
 
-  if (openaiModels.some((m) => model.includes(m))) {
-    return "openai";
+// Estimate token count (rough approximation)
+function estimateTokenCount(text: string): number {
+  // Rough estimate: 1 token ≈ 4 characters for English text
+  return Math.ceil(text.length / 4);
+}
+
+// Check and update rate limit
+function checkRateLimit(
+  model: OpenAIModel,
+  estimatedTokens: number
+): { allowed: boolean; remaining: number } {
+  const state = rateLimitState.get(model)!;
+  const now = Date.now();
+  const windowDuration = 60 * 1000; // 1 minute
+  const maxTokens = OPENAI_MODELS[model];
+
+  // Reset window if it's been more than a minute
+  if (now - state.windowStart >= windowDuration) {
+    state.tokensUsed = 0;
+    state.windowStart = now;
+    state.requestCount = 0;
   }
-  if (anthropicModels.some((m) => model.includes(m))) {
-    return "anthropic";
+
+  const wouldExceed = state.tokensUsed + estimatedTokens > maxTokens;
+  const remaining = maxTokens - state.tokensUsed;
+
+  if (!wouldExceed) {
+    state.tokensUsed += estimatedTokens;
+    state.requestCount++;
   }
-  throw Error("Incorrect model");
+
+  return { allowed: !wouldExceed, remaining };
+}
+
+// Truncate prompt to fit within rate limits
+function truncatePromptForRateLimit(
+  prompt: string,
+  maxTokens: number
+): { prompt: string; truncated: boolean } {
+  const estimatedTokens = estimateTokenCount(prompt);
+
+  if (estimatedTokens <= maxTokens) {
+    return { prompt, truncated: false };
+  }
+
+  // Reserve some tokens for the truncation message
+  const reservedTokens = 50;
+  const availableTokens = maxTokens - reservedTokens;
+  const truncatedLength = Math.floor(availableTokens * 4); // Convert back to characters
+
+  const truncatedPrompt =
+    prompt.substring(0, truncatedLength) +
+    "\n\n[PROMPT TRUNCATED DUE TO RATE LIMITS - This is your final prompt, please provide your best response based on the available information.]";
+
+  return { prompt: truncatedPrompt, truncated: true };
 }
 
 // Convert tools to OpenAI format
@@ -69,19 +128,6 @@ function convertToOpenAITools(tools: MCPTool[]) {
       name: tool.name,
       description: tool.description || `Execute ${tool.name}`,
       parameters: tool.inputSchema || {},
-    },
-  }));
-}
-
-// Convert tools to Anthropic format
-function convertToAnthropicTools(tools: MCPTool[]) {
-  return tools.map((tool) => ({
-    name: tool.name,
-    description: tool.description || `Execute ${tool.name}`,
-    input_schema: {
-      type: "object" as const,
-      properties: tool.inputSchema.properties || {},
-      required: tool.inputSchema.required || [],
     },
   }));
 }
@@ -112,11 +158,11 @@ function extractHTML(content: string): string {
   return "";
 }
 
-// Global MCP client instance for reuse across API calls
+// MCP client instance
 let globalMCPClient: Client | null = null;
 let clientInitializationPromise: Promise<Client> | null = null;
 
-// Initialize MCP client with connection reuse
+// Initialize MCP client with connection
 async function getMCPClient(): Promise<Client> {
   // If client already exists and is connected, return it
   if (globalMCPClient) {
@@ -159,7 +205,7 @@ async function getMCPClient(): Promise<Client> {
   }
 }
 
-// Enhanced executeToolCall function with better error handling
+// Execute an MCP Tool Call
 async function executeToolCall(
   toolName: string,
   parameters: Record<string, unknown>,
@@ -173,8 +219,47 @@ async function executeToolCall(
       arguments: parameters,
     });
 
+    // Validate that we actually got data back
+    if (!result || !result.content) {
+      console.warn(`Tool ${toolName} returned empty or null result`);
+      return JSON.stringify({ error: "Tool returned no data" }, null, 2);
+    }
+
+    // Check for successful data retrieval
+    const hasValidContent = Array.isArray(result.content)
+      ? result.content.length > 0
+      : result.content && typeof result.content === 'object';
+
+    if (!hasValidContent) {
+      console.warn(`Tool ${toolName} returned empty content array or invalid data structure`);
+    }
+
+    // Check for and log image_base64 fields
+    const contentStr = JSON.stringify(result.content);
+    if (contentStr.includes('image_base64')) {
+      console.log(`Tool ${toolName} returned response containing image data`);
+
+      // Count how many images were returned
+      const imageMatches = contentStr.match(/"image_base64":/g);
+      const imageCount = imageMatches ? imageMatches.length : 0;
+      console.log(`Found ${imageCount} image(s) in response from ${toolName}`);
+
+      // Log first 100 chars of each image for verification (without full base64 spam)
+      try {
+        const parsedContent = Array.isArray(result.content) ? result.content : [result.content];
+        parsedContent.forEach((item: any, index: number) => {
+          if (item && typeof item === 'object' && item.image_base64) {
+            const imagePreview = item.image_base64.substring(0, 100);
+            console.log(`Image ${index + 1} base64 preview: ${imagePreview}...`);
+          }
+        });
+      } catch (parseError) {
+        console.warn('Could not parse content for image logging:', parseError);
+      }
+    }
+
     const resultString = JSON.stringify(result.content, null, 2);
-    console.log(`Tool ${toolName} executed successfully`);
+    console.log(`Tool ${toolName} executed successfully with ${hasValidContent ? 'valid' : 'empty'} content`);
     return resultString;
   } catch (error) {
     console.error(`Error executing tool ${toolName}:`, error);
@@ -191,11 +276,39 @@ async function executeToolCall(
 
 async function callOpenAI(payload: LLMRequestPayload): Promise<string> {
   let mcpClient: Client | null = null;
-
   try {
+    // Validate model
+    if (!validateOpenAIModel(payload.modelConfig.model)) {
+      throw new Error(`Unsupported model: ${payload.modelConfig.model}`);
+    }
+
+    const model = payload.modelConfig.model as OpenAIModel;
+
+    // Estimate total token usage for the initial request
+    const estimatedTokens = estimateTokenCount(
+      payload.systemPrompt + payload.prompt
+    );
+
+    // Check rate limit
+    const rateLimitCheck = checkRateLimit(model, estimatedTokens);
+    let currentPrompt = payload.prompt;
+    let isRateLimited = false;
+
+    if (!rateLimitCheck.allowed) {
+      console.warn(
+        `Rate limit would be exceeded. Remaining tokens: ${rateLimitCheck.remaining}`
+      );
+      const truncateResult = truncatePromptForRateLimit(
+        payload.prompt,
+        rateLimitCheck.remaining
+      );
+      currentPrompt = truncateResult.prompt;
+      isRateLimited = truncateResult.truncated;
+    }
+
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: "system", content: payload.systemPrompt },
-      { role: "user", content: payload.prompt },
+      { role: "user", content: currentPrompt },
     ];
 
     const requestOptions: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
@@ -207,114 +320,6 @@ async function callOpenAI(payload: LLMRequestPayload): Promise<string> {
     if (payload.availableTools.length > 0) {
       requestOptions.tools = convertToOpenAITools(payload.availableTools);
       requestOptions.tool_choice = "auto";
-    }
-
-    // Initialize MCP client for tool execution
-    if (payload.availableTools.length > 0) {
-      try {
-        mcpClient = await getMCPClient();
-      } catch (mcpError) {
-        console.error("Failed to get MCP client:", mcpError);
-        throw new Error(
-          `MCP client error: ${
-            mcpError instanceof Error ? mcpError.message : "Unknown error"
-          }`
-        );
-      }
-    }
-
-    // Initial API call
-    console.log("Making initial OpenAI API call...");
-    const response = await openai.chat.completions.create({
-      ...requestOptions,
-      messages,
-    });
-
-    const message = response.choices[0]?.message;
-    if (!message) {
-      throw new Error("No response from OpenAI API");
-    }
-
-    // Add assistant message to conversation
-    messages.push(message);
-
-    let finalContent = message.content || "";
-
-    // If there are tool calls, execute them and get final response
-    if (message.tool_calls && message.tool_calls.length > 0 && mcpClient) {
-      console.log(`Processing ${message.tool_calls.length} tool calls...`);
-
-      for (const toolCall of message.tool_calls) {
-        try {
-          const result = await executeToolCall(
-            toolCall.function.name,
-            JSON.parse(toolCall.function.arguments),
-            mcpClient
-          );
-
-          // Add tool result to conversation
-          messages.push({
-            role: "tool",
-            content: result,
-            tool_call_id: toolCall.id,
-          });
-        } catch (toolError) {
-          console.error(
-            `Tool execution failed for ${toolCall.function.name}:`,
-            toolError
-          );
-          // Add error result to conversation so the LLM can handle it
-          messages.push({
-            role: "tool",
-            content: `Error executing ${toolCall.function.name}: ${
-              toolError instanceof Error ? toolError.message : "Unknown error"
-            }`,
-            tool_call_id: toolCall.id,
-          });
-        }
-      }
-
-      // Get final response after tool execution
-      console.log("Getting final OpenAI response after tool execution...");
-      const finalResponse = await openai.chat.completions.create({
-        ...requestOptions,
-        messages,
-      });
-
-      finalContent = finalResponse.choices[0]?.message.content || "";
-    }
-
-    console.log("OpenAI call completed successfully");
-    return finalContent;
-  } catch (error) {
-    console.error("Error in callOpenAI:", error);
-
-    // Re-throw the error to be handled by the main error handler
-    // Don't wrap it in a new Error - preserve the original error structure
-    throw error;
-  } finally {
-    // Note: We intentionally don't disconnect the MCP client here
-    // to allow reuse across multiple API calls
-  }
-}
-
-async function callAnthropic(payload: LLMRequestPayload): Promise<string> {
-  let mcpClient: Client | null = null;
-
-  try {
-    const messages: Anthropic.Messages.MessageParam[] = [
-      { role: "user", content: payload.prompt },
-    ];
-
-    const requestOptions: Anthropic.Messages.MessageCreateParams = {
-      model: payload.modelConfig.model,
-      max_tokens: payload.modelConfig.maxTokens,
-      system: payload.systemPrompt,
-      messages,
-    };
-
-    if (payload.availableTools.length > 0) {
-      requestOptions.tools = convertToAnthropicTools(payload.availableTools);
     }
 
     // Get MCP client for tool execution
@@ -331,114 +336,108 @@ async function callAnthropic(payload: LLMRequestPayload): Promise<string> {
       }
     }
 
-    // Initial API call
-    console.log("Making initial Anthropic API call...");
-    const response = await anthropic.messages.create({
-      ...requestOptions,
-      messages,
-    });
+    // Conversational loop - continue until no more tool calls
+    const maxIterations = 10; // Prevent infinite loops
+    let iteration = 0;
 
-    // Add assistant message to conversation
-    const assistantMessageContent: Anthropic.Messages.ContentBlock[] = [];
-    let textContent = "";
-    let hasToolCalls = false;
+    while (iteration < maxIterations) {
+      console.log(`Chat iteration: ${iteration}`);
+      iteration++;
 
-    // Process response content
-    for (const block of response.content) {
-      assistantMessageContent.push(block);
-      if (block.type === "text") {
-        textContent += block.text;
-      } else if (block.type === "tool_use") {
-        hasToolCalls = true;
-      }
-    }
+      // Check if this is the final iteration due to rate limits or max iterations
+      const isFinalIteration = isRateLimited || iteration >= maxIterations;
 
-    messages.push({
-      role: "assistant",
-      content: assistantMessageContent,
-    });
-
-    // If there are tool calls, execute them and get final response
-    if (hasToolCalls && mcpClient) {
-      console.log("Processing Anthropic tool calls...");
-
-      const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
-
-      for (const block of response.content) {
-        if (block.type === "tool_use") {
-          try {
-            const result = await executeToolCall(
-              block.name,
-              block.input as Record<string, unknown>,
-              mcpClient
-            );
-
-            console.log(`Tool [${block.name}] result: ${result}`);
-
-            // Add tool result to conversation
-            toolResults.push({
-              type: "tool_result",
-              tool_use_id: block.id,
-              content: result,
-            });
-          } catch (toolError) {
-            console.error(
-              `Tool execution failed for ${block.name}:`,
-              toolError
-            );
-            // Add error result to conversation so the LLM can handle it
-            toolResults.push({
-              type: "tool_result",
-              tool_use_id: block.id,
-              content: `Error executing ${block.name}: ${
-                toolError instanceof Error ? toolError.message : "Unknown error"
-              }`,
-            });
-          }
-        }
-      }
-
-      if (toolResults.length > 0) {
+      if (isFinalIteration && messages.length > 2) {
+        // Add a final instruction for the last iteration
         messages.push({
           role: "user",
-          content: toolResults,
+          content:
+            "This is the final response due to rate limits or iteration limits. Please provide your best final answer based on all the information gathered so far.",
         });
       }
 
-      // Get final response after tool execution
-      console.log("Getting final Anthropic response after tool execution...");
-      const finalResponse = await anthropic.messages.create({
+      const response = await openai.chat.completions.create({
         ...requestOptions,
         messages,
       });
 
-      console.log(`Final Anthropic response received`);
+      const message = response.choices[0]?.message;
+      if (!message) {
+        throw new Error("No response from OpenAI API");
+      }
 
-      const finalText =
-        finalResponse.content[0].type === "text"
-          ? finalResponse.content[0].text
-          : "";
+      // Add assistant message to conversation
+      messages.push(message);
 
-      return finalText;
-    }
+      // Check if there are tool calls to execute (but not on final iteration)
+      if (
+        message.tool_calls &&
+        message.tool_calls.length > 0 &&
+        mcpClient &&
+        !isFinalIteration
+      ) {
+        console.log(
+          `Processing ${message.tool_calls.length} tool calls in iteration ${iteration}...`
+        );
 
-    console.log("Anthropic call completed successfully");
-    return textContent;
-  } catch (error) {
-    console.error("Error in callAnthropic:", error);
+        for (const toolCall of message.tool_calls) {
+          try {
+            const result = await executeToolCall(
+              toolCall.function.name,
+              JSON.parse(toolCall.function.arguments),
+              mcpClient
+            );
 
-    // Re-throw the error to be handled by the main error handler
-    // Don't wrap it in a new Error - preserve the original error structure
-    throw error;
-  } finally {
-    // Clean up MCP client if needed
-    if (mcpClient) {
-      try {
-        // Add any cleanup logic here if the MCP client has a disconnect method
-      } catch (cleanupError) {
-        console.warn("MCP client cleanup failed:", cleanupError);
+            // Add tool result to conversation
+            messages.push({
+              role: "tool",
+              content: result,
+              tool_call_id: toolCall.id,
+            });
+          } catch (toolError) {
+            console.error(
+              `Tool execution failed for ${toolCall.function.name}:`,
+              toolError
+            );
+            // Add error result to conversation so the LLM can handle it
+            messages.push({
+              role: "tool",
+              content: `Error executing ${toolCall.function.name}: ${
+                toolError instanceof Error ? toolError.message : "Unknown error"
+              }`,
+              tool_call_id: toolCall.id,
+            });
+          }
+        }
+
+        // Continue the loop to get the next response
+        continue;
+      } else {
+        // No tool calls or final iteration, we have the final response
+        console.log(
+          `OpenAI conversation completed after ${iteration} iterations`
+        );
+        return message.content || "";
       }
     }
+
+    // If we've hit the max iterations, return the last message content
+    console.warn(
+      `OpenAI conversation hit max iterations (${maxIterations}). Returning last response.`
+    );
+    const lastMessage = messages[messages.length - 1];
+    if (
+      lastMessage &&
+      lastMessage.role === "assistant" &&
+      "content" in lastMessage
+    ) {
+      return typeof lastMessage.content === "string" ? lastMessage.content : "";
+    }
+
+    throw new Error("Max iterations reached without final response");
+  } catch (error) {
+    console.error("Error in callOpenAI:", error);
+    throw error;
   }
 }
 
@@ -454,29 +453,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const provider = getModelProvider(payload.modelConfig.model);
-
-    let llmResponse: string;
-
-    if (provider === "openai") {
-      if (!process.env.OPENAI_API_KEY) {
-        return NextResponse.json(
-          { error: "OpenAI API key not configured" },
-          { status: 500 }
-        );
-      }
-      llmResponse = await callOpenAI(payload);
-    } else {
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return NextResponse.json(
-          { error: "Anthropic API key not configured" },
-          { status: 500 }
-        );
-      }
-      llmResponse = await callAnthropic(payload);
+    // Validate that it's a supported OpenAI model
+    if (!validateOpenAIModel(payload.modelConfig.model)) {
+      return NextResponse.json(
+        {
+          error: `Unsupported model: ${
+            payload.modelConfig.model
+          }. Supported models: ${Object.keys(OPENAI_MODELS).join(", ")}`,
+        },
+        { status: 400 }
+      );
     }
 
-    console.log(llmResponse);
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: "OpenAI API key not configured" },
+        { status: 500 }
+      );
+    }
+
+    const llmResponse = await callOpenAI(payload);
 
     // Extract HTML from the response
     const htmlResponse = extractHTML(llmResponse);

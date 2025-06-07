@@ -31,9 +31,7 @@ export default function Home() {
     {}
   );
   const [completePromptText, setCompletePromptText] = useState<string>("");
-  const [selectedModel, setSelectedModel] = useState<string>(
-    "claude-3-5-sonnet-20241022"
-  );
+  const [selectedModel, setSelectedModel] = useState<string>("gpt-4.1-nano");
 
   const handlePromptChange = (value: string) => {
     setSelectedPrompt(value);
@@ -282,7 +280,14 @@ export default function Home() {
                             </h4>
                             <div className="space-y-4">
                               {selectedPromptData.arguments.map(
-                                (arg: { name: string; description?: string; required?: boolean }, index: number) => (
+                                (
+                                  arg: {
+                                    name: string;
+                                    description?: string;
+                                    required?: boolean;
+                                  },
+                                  index: number
+                                ) => (
                                   <div key={index} className="space-y-2">
                                     <div className="flex items-center gap-2">
                                       <Badge
@@ -366,21 +371,14 @@ export default function Home() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="claude-3-5-sonnet-20241022">
-                                Claude 3.5 Sonnet
+                              <SelectItem value="gpt-4.1-mini">
+                                GPT-4.1 Mini
                               </SelectItem>
-                              <SelectItem value="claude-sonnet-4-20250514">
-                                Claude Sonnet 4
+                              <SelectItem value="gpt-4.1-nano">
+                                GPT-4.1 Nano
                               </SelectItem>
-                              <SelectItem value="claude-3-haiku-20240307">
-                                Claude 3 Haiku
-                              </SelectItem>
-                              <SelectItem value="gpt-4o">GPT-4o</SelectItem>
                               <SelectItem value="gpt-4o-mini">
                                 GPT-4o Mini
-                              </SelectItem>
-                              <SelectItem value="gpt-4-turbo">
-                                GPT-4 Turbo
                               </SelectItem>
                             </SelectContent>
                           </Select>

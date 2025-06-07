@@ -37,6 +37,7 @@ export default function ResultsPage() {
   const [error, setError] = useState<string | null>(null);
   const [requestPayload, setRequestPayload] =
     useState<LLMRequestPayload | null>(null);
+  const [hasGenerated, setHasGenerated] = useState(false);
   const [submissionData, setSubmissionData] = useState<{
     completePromptText: string;
     model?: string;
@@ -54,7 +55,6 @@ export default function ResultsPage() {
     try {
       const data = JSON.parse(storedData);
       setSubmissionData(data);
-      initializeAndGenerate(data);
     } catch (error) {
       console.error("Error parsing submission data:", error);
       setError("Invalid submission data");
@@ -62,44 +62,11 @@ export default function ResultsPage() {
     }
   }, [router]);
 
-  const initializeAndGenerate = useCallback(async (data: {
-    completePromptText: string;
-    model?: string;
-  }) => {
-    if (!mcpClient) {
-      setError("MCP client not available");
-      setLoading(false);
-      return;
-    }
+  const prepareRequestPayload = useCallback(
+    async (prompt: string, model?: string): Promise<LLMRequestPayload> => {
+      const availableTools = tools;
 
-    try {
-      // Generate the report using the shared client
-      await generateReport(data.completePromptText, data.model);
-    } catch (error) {
-      console.error("Error generating report:", error);
-      setError(
-        `Failed to generate report: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-      setLoading(false);
-    }
-  }, [mcpClient, tools]);
-
-  // Effect to generate report when both submission data and MCP client are ready
-  useEffect(() => {
-    if (submissionData && mcpClient && tools.length > 0) {
-      initializeAndGenerate(submissionData);
-    }
-  }, [submissionData, mcpClient, tools, initializeAndGenerate]);
-
-  const prepareRequestPayload = async (
-    prompt: string,
-    model?: string
-  ): Promise<LLMRequestPayload> => {
-    const availableTools = tools;
-
-    const systemPrompt = `You are an expert baseball analyst with access to comprehensive MLB data through specialized tools.
+      const systemPrompt = `You are an expert baseball analyst with access to comprehensive MLB data through specialized tools.
 
 Your task is to execute the provided prompt instructions exactly as specified. The prompt contains detailed steps for:
 1. Gathering data using specific MCP tools
@@ -111,75 +78,112 @@ IMPORTANT INSTRUCTIONS:
 - Use the available tools to gather real data
 - Generate a complete, self-contained HTML document as the final output
 - Include proper HTML structure with embedded CSS
-- Ensure all visualizations are included as base64 images
+- Ensure all visualizations are included as COMPLETE, VALID base64 images
+- Do NOT use placeholder text like {base64_spray_chart} - generate actual base64 data
 - The HTML should be ready to display in a browser
 
 Available MCP tools: ${availableTools.map((t) => t.name).join(", ")}
 
 Execute the prompt instructions and return ONLY the final HTML document.`;
 
-    return {
-      prompt,
-      systemPrompt,
-      availableTools: availableTools,
-      modelConfig: {
-        model: model || "claude-3-5-sonnet-20241022",
-        maxTokens: 8000,
-      },
-    };
-  };
-
-  const generateReport = async (
-    prompt: string,
-    model?: string
-  ) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const payload = await prepareRequestPayload(prompt, model);
-      setRequestPayload(payload);
-
-      console.log("Request payload prepared for server-side API:");
-      console.log(payload);
-
-      const response = await fetch("/api/llm", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      return {
+        prompt,
+        systemPrompt,
+        availableTools: availableTools,
+        modelConfig: {
+          model: model || "gpt-4.1-nano",
+          maxTokens: 8000,
         },
-        body: JSON.stringify(payload),
-      });
+      };
+    },
+    [tools]
+  );
 
-      console.log(response);
+  const generateReport = useCallback(
+    async (prompt: string, model?: string) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error(errorData);
-        throw new Error(`API error: ${errorData.error || response.statusText}`);
+        const payload = await prepareRequestPayload(prompt, model);
+        setRequestPayload(payload);
+
+        console.log("Request payload prepared for server-side API:");
+        console.log(payload);
+
+        const response = await fetch("/api/llm", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        console.log(response);
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error(errorData);
+          throw new Error(
+            `API error: ${errorData.error || response.statusText}`
+          );
+        }
+
+        // The API returns HTML directly as text/html
+        const htmlResult = await response.text();
+        setHtmlResult(htmlResult);
+      } catch (err) {
+        console.error("Error generating report:", err);
+        setError(
+          `Failed to generate report: ${
+            err instanceof Error ? err.message : "Unknown error"
+          }`
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [prepareRequestPayload]
+  );
+
+  const initializeAndGenerate = useCallback(
+    async (data: { completePromptText: string; model?: string }) => {
+      if (hasGenerated) {
+        return;
+      }
+      setHasGenerated(true);
+      if (!mcpClient) {
+        setError("MCP client not available");
+        setLoading(false);
+        return;
       }
 
-      // The API returns HTML directly as text/html
-      const htmlResult = await response.text();
-      setHtmlResult(htmlResult);
-    } catch (err) {
-      console.error("Error generating report:", err);
-      setError(
-        `Failed to generate report: ${
-          err instanceof Error ? err.message : "Unknown error"
-        }`
-      );
-    } finally {
-      setLoading(false);
+      try {
+        // Generate the report using the shared client
+        await generateReport(data.completePromptText, data.model);
+      } catch (error) {
+        console.error("Error generating report:", error);
+        setError(
+          `Failed to generate report: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
+        setLoading(false);
+      }
+    },
+    [mcpClient, hasGenerated, generateReport]
+  );
+
+  // Effect to generate report when both submission data and MCP client are ready
+  useEffect(() => {
+    if (submissionData && mcpClient && tools.length > 0) {
+      initializeAndGenerate(submissionData);
     }
-  };
+  }, [submissionData, mcpClient, tools, initializeAndGenerate]);
 
   const handleRetry = () => {
     if (submissionData && mcpClient) {
-      generateReport(
-        submissionData.completePromptText,
-        submissionData.model
-      );
+      generateReport(submissionData.completePromptText, submissionData.model);
     }
   };
 
@@ -277,7 +281,7 @@ Execute the prompt instructions and return ONLY the final HTML document.`;
                     Preparing Server Request...
                   </h3>
                   <p className="text-sm text-muted-foreground text-center max-w-md">
-                    Connecting to MCP server and formatting data for Claude API
+                    Connecting to MCP server and formatting data for OpenAI API
                     call.
                   </p>
                 </div>
