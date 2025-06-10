@@ -5,6 +5,7 @@ MCP server implementation for the baseball project with MLB Stats API integratio
 import contextlib
 import inspect
 import sys
+import os
 from typing import Any, Dict, Optional
 
 import uvicorn
@@ -820,7 +821,7 @@ def create_fastapi_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000"],  # Your Next.js dev server
+        allow_origins=["*"],  # Your Next.js dev server
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -834,13 +835,24 @@ def main():
     # Check if running with HTTP transport
     if "--http" in sys.argv:
         logger.info("Starting MLB Stats MCP server over HTTP with FastAPI")
+        # Get port from environment variable, default to 8000
+        port = int(os.getenv("PORT", "8000"))
+        logger.info(f"Starting server on port {port}")
+        
+        # Create the FastAPI app first to ensure it's properly initialized
+        app = create_fastapi_app()
+        logger.info("FastAPI application initialized successfully")
+        
+        # Run the server with more detailed configuration
         uvicorn.run(
-            "mlb_stats_mcp.server:create_fastapi_app",
+            app,
             host="0.0.0.0",  # This binds to all interfaces
-            port=8000,
-            log_level="info",
-            reload=True,
-            factory=True,
+            port=port,
+            log_level="debug",  # Increase logging level for debugging
+            reload=False,  # Disable reload in production
+            workers=1,  # Use a single worker for now
+            timeout_keep_alive=30,  # Increase keep-alive timeout
+            access_log=True,  # Enable access logging
         )
     else:
         logger.info("Starting MLB Stats MCP server with stdio transport")
