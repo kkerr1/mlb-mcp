@@ -10,8 +10,9 @@ from typing import Any, Dict, Optional
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from mcp.server.fastmcp import FastMCP
 
 from mlb_stats_mcp.prompts.prompts import (
@@ -815,10 +816,32 @@ async def lifespan(app: FastAPI):
         yield
 
 
+class AuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header is missing")
+        
+        # You can add additional validation here, such as checking for a specific token format
+        # For example, if you expect "Bearer <token>":
+        if not auth_header == "test":
+            raise HTTPException(status_code=401, detail="Invalid authorization header")
+            
+        # You can also validate the token itself here
+        # token = auth_header.split(" ")[1]
+        # if not is_valid_token(token):
+        #     raise HTTPException(status_code=401, detail="Invalid token")
+            
+        response = await call_next(request)
+        return response
+
+
 # Add this function to create the FastAPI app
 def create_fastapi_app() -> FastAPI:
     """Create and configure FastAPI application."""
     app = FastAPI(lifespan=lifespan)
+    
+    # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],  # Your Next.js dev server
@@ -826,6 +849,10 @@ def create_fastapi_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    
+    # Add authorization middleware
+    app.add_middleware(AuthMiddleware)
+    
     app.mount("/", mcp.streamable_http_app())
     return app
 
