@@ -24,9 +24,6 @@ RUN uv sync --frozen
 # Copy the entire project
 COPY mlb_stats_mcp /app/mlb_stats_mcp
 
-# Copy .env file to the working directory
-COPY .env /app/.env
-
 # Create logs directory
 RUN mkdir -p /app/logs
 
