@@ -824,10 +824,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         
         # Check against the environment variable
         expected_token = os.getenv("MCP_SUPER_SECRET")
-        if not expected_token:
-            raise HTTPException(status_code=500, detail="Server configuration error: MCP_SUPER_SECRET not set")
-            
-        if not auth_header == expected_token:
+        if not expected_token or not auth_header == expected_token:
             raise HTTPException(status_code=401, detail="Invalid authorization header")
             
         response = await call_next(request)
