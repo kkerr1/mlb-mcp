@@ -822,15 +822,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if not auth_header:
             raise HTTPException(status_code=401, detail="Authorization header is missing")
         
-        # You can add additional validation here, such as checking for a specific token format
-        # For example, if you expect "Bearer <token>":
-        if not auth_header == "test":
-            raise HTTPException(status_code=401, detail="Invalid authorization header")
+        # Check against the environment variable
+        expected_token = os.getenv("MCP_SUPER_SECRET")
+        if not expected_token:
+            raise HTTPException(status_code=500, detail="Server configuration error: MCP_SUPER_SECRET not set")
             
-        # You can also validate the token itself here
-        # token = auth_header.split(" ")[1]
-        # if not is_valid_token(token):
-        #     raise HTTPException(status_code=401, detail="Invalid token")
+        if not auth_header == expected_token:
+            raise HTTPException(status_code=401, detail="Invalid authorization header")
             
         response = await call_next(request)
         return response
@@ -859,6 +857,11 @@ def create_fastapi_app() -> FastAPI:
 
 def main():
     """Initialize and run the MCP baseball server."""
+    # Check for required environment variables
+    if not os.getenv("MCP_SUPER_SECRET"):
+        logger.error("Required environment variable MCP_SUPER_SECRET is not set")
+        sys.exit(1)
+        
     # Check if running with HTTP transport
     if "--http" in sys.argv:
         logger.info("Starting MLB Stats MCP server over HTTP with FastAPI")
